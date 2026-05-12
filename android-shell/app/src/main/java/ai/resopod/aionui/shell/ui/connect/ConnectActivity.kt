@@ -110,7 +110,7 @@ class ConnectActivity : AppCompatActivity() {
         TextView(this).apply {
           background = AppCompatResources.getDrawable(this@ConnectActivity, R.drawable.server_badge_favorite)
           text = getString(R.string.server_badge_favorite)
-          setTextColor(0xFF04111A.toInt())
+          setTextColor(0xFFFFFFFF.toInt())
           textSize = 11f
           setTypeface(typeface, Typeface.BOLD)
           setPadding(18, 8, 18, 8)
@@ -136,7 +136,7 @@ class ConnectActivity : AppCompatActivity() {
         TextView(this).apply {
           background = AppCompatResources.getDrawable(this@ConnectActivity, R.drawable.server_badge_recent)
           text = getString(R.string.server_badge_recent)
-          setTextColor(0xFF04111A.toInt())
+          setTextColor(0xFFFFFFFF.toInt())
           textSize = 11f
           setTypeface(typeface, Typeface.BOLD)
           setPadding(18, 8, 18, 8)

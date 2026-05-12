@@ -73,7 +73,7 @@
           android:background="@drawable/connect_primary_button"
           android:text="@string/connect_button"
           android:textAllCaps="false"
-          android:textColor="#05111A"
+          android:textColor="#FFFFFFFF"
           android:textStyle="bold" />
       </LinearLayout>
 

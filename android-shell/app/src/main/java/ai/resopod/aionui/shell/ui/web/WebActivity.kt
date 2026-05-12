@@ -27,6 +27,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ImageButton
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -40,6 +41,7 @@ import ai.resopod.aionui.shell.data.ServerEntry
 import ai.resopod.aionui.shell.ui.connect.ConnectActivity
 import ai.resopod.aionui.shell.ui.connect.ConnectScreenMode
 import ai.resopod.aionui.shell.ui.shared.ServerPresentation
+import kotlin.math.min
 
 class WebActivity : AppCompatActivity() {
   private lateinit var btnBack: ImageButton
@@ -405,6 +407,7 @@ class WebActivity : AppCompatActivity() {
     }
 
     val content = layoutInflater.inflate(R.layout.dialog_server_switcher, null)
+    val switcherScrollView = content.findViewById<ScrollView>(R.id.switcherScrollView)
     val serverList = content.findViewById<LinearLayout>(R.id.switcherServerList)
     val manageAction = content.findViewById<Button>(R.id.switcherManageAction)
     val currentUrl = prefs.getLastUrl()
@@ -436,6 +439,14 @@ class WebActivity : AppCompatActivity() {
 
     dialog.show()
     dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+    switcherScrollView.post {
+      val maxHeight = (resources.displayMetrics.heightPixels * 0.45f).toInt()
+      val desiredHeight = min(serverList.measuredHeight, maxHeight)
+      switcherScrollView.layoutParams =
+        switcherScrollView.layoutParams.apply {
+          height = desiredHeight
+        }
+    }
   }
 
   private fun switchToServer(server: ServerEntry) {
@@ -496,7 +507,7 @@ class WebActivity : AppCompatActivity() {
           TextView(this@WebActivity).apply {
             background = AppCompatResources.getDrawable(this@WebActivity, R.drawable.server_badge_recent)
             text = getString(R.string.server_badge_recent)
-            setTextColor(Color.parseColor("#04111A"))
+            setTextColor(Color.WHITE)
             textSize = 11f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             setPadding(18, 8, 18, 8)
@@ -523,7 +534,7 @@ class WebActivity : AppCompatActivity() {
       TextView(this).apply {
         background = AppCompatResources.getDrawable(this@WebActivity, backgroundRes)
         text = getString(textRes)
-        setTextColor(Color.parseColor("#04111A"))
+        setTextColor(Color.WHITE)
         textSize = 11f
         setTypeface(typeface, android.graphics.Typeface.BOLD)
         setPadding(18, 8, 18, 8)
