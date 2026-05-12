@@ -25,6 +25,10 @@
   <string name="web_load_failed">Load failed</string>
   <string name="web_failed_to_load">Failed to load: %1$s</string>
   <string name="web_retry">Retry</string>
+  <string name="web_notification_prompt_title">Allow notifications?</string>
+  <string name="web_notification_prompt_message">Allowing this lets the web app show notification reminders through your phone.</string>
+  <string name="web_notification_prompt_allow">Allow</string>
+  <string name="web_notification_prompt_deny">Not now</string>
   <string name="web_open_in_browser">Open in browser</string>
   <string name="web_copy_url">Copy URL</string>
   <string name="web_copied">Copied</string>

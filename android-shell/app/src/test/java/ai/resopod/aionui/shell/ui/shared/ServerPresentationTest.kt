@@ -44,4 +44,21 @@ class ServerPresentationTest {
     assertFalse(result.showFavoriteBadge)
     assertTrue(result.showRecentBadge)
   }
+
+  @Test
+  fun supportsShowingFavoriteAndRecentTogether() {
+    val server =
+      ServerEntry(
+        id = "1",
+        displayName = "Prod",
+        url = "https://prod.example",
+        isFavorite = true,
+        lastUsedAt = 100,
+      )
+
+    val result = ServerPresentation.from(server, currentUrl = "https://prod.example")
+
+    assertTrue(result.showFavoriteBadge)
+    assertTrue(result.showRecentBadge)
+  }
 }

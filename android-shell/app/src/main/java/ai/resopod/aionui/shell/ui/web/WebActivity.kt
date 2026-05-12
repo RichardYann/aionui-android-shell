@@ -10,12 +10,16 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.os.Build
 import android.graphics.Color
+import android.Manifest
+import android.content.pm.PackageManager
 import android.webkit.CookieManager
 import android.webkit.DownloadListener
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
+import android.webkit.JavascriptInterface
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
@@ -25,6 +29,7 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ImageButton
 import android.widget.ScrollView
@@ -34,6 +39,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import ai.resopod.aionui.shell.R
 import ai.resopod.aionui.shell.data.AppPrefs
@@ -54,6 +60,7 @@ class WebActivity : AppCompatActivity() {
   private lateinit var errorOverlay: android.view.View
   private lateinit var errorMessage: TextView
   private lateinit var prefs: AppPrefs
+  private var pendingNotificationRequestId: String? = null
 
   private var lastBackPressedAtMs: Long = 0
   private var filePathCallback: ValueCallback<Array<Uri>>? = null
@@ -91,6 +98,13 @@ class WebActivity : AppCompatActivity() {
 
       hideError()
       webView.loadUrl(nextUrl)
+    }
+
+  private val notificationPermissionLauncher =
+    registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+      val requestId = pendingNotificationRequestId ?: return@registerForActivityResult
+      pendingNotificationRequestId = null
+      resolveWebNotificationPermission(requestId, if (granted) "granted" else "denied")
     }
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -201,6 +215,8 @@ class WebActivity : AppCompatActivity() {
       userAgentString = userAgentString
     }
 
+    webView.addJavascriptInterface(NotificationPermissionBridge(), "AionUiNotificationBridge")
+
     webView.webViewClient =
       object : WebViewClient() {
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -230,6 +246,7 @@ class WebActivity : AppCompatActivity() {
           hideError()
           keepNavigationVisible()
           syncNavigationColor()
+          injectNotificationPermissionShim()
         }
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
@@ -462,34 +479,37 @@ class WebActivity : AppCompatActivity() {
     presentation: ServerPresentation,
     dialog: AlertDialog,
   ): View =
-    LinearLayout(this).apply {
-      orientation = LinearLayout.VERTICAL
+    FrameLayout(this).apply {
       background = AppCompatResources.getDrawable(this@WebActivity, R.drawable.server_card_background)
       setPadding(24, 20, 24, 20)
       setOnClickListener {
         dialog.dismiss()
         switchToServer(server)
       }
-      addView(
+      val contentColumn =
         LinearLayout(this@WebActivity).apply {
-          orientation = LinearLayout.HORIZONTAL
-          gravity = Gravity.CENTER_VERTICAL
+          orientation = LinearLayout.VERTICAL
+          setPadding(0, 0, 188, 0)
+        }
 
+      addView(
+        contentColumn.apply {
           addView(
             TextView(this@WebActivity).apply {
               text = presentation.primaryText
-              layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
               setTextColor(Color.WHITE)
               textSize = 17f
               setTypeface(typeface, android.graphics.Typeface.BOLD)
             },
           )
-
-          addBadgeIfVisible(this, R.drawable.server_badge_favorite, R.string.server_badge_favorite, presentation.showFavoriteBadge)
         },
+        FrameLayout.LayoutParams(
+          FrameLayout.LayoutParams.MATCH_PARENT,
+          FrameLayout.LayoutParams.WRAP_CONTENT,
+        ),
       )
 
-      addView(
+      contentColumn.addView(
         TextView(this@WebActivity).apply {
           text = presentation.secondaryText
           setTextColor(Color.parseColor("#B7D2E8"))
@@ -504,24 +524,19 @@ class WebActivity : AppCompatActivity() {
         },
       )
 
-      if (presentation.showRecentBadge) {
-        addView(
-          TextView(this@WebActivity).apply {
-            background = AppCompatResources.getDrawable(this@WebActivity, R.drawable.server_badge_recent)
-            text = getString(R.string.server_badge_recent)
-            setTextColor(Color.WHITE)
-            textSize = 11f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-            setPadding(18, 8, 18, 8)
-          },
-          LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-          ).apply {
-            topMargin = 14
-          },
-        )
-      }
+      addView(
+        LinearLayout(this@WebActivity).apply {
+          orientation = LinearLayout.HORIZONTAL
+          gravity = Gravity.END or Gravity.TOP
+          addBadgeIfVisible(this, R.drawable.server_badge_favorite, R.string.server_badge_favorite, presentation.showFavoriteBadge)
+          addBadgeIfVisible(this, R.drawable.server_badge_recent, R.string.server_badge_recent, presentation.showRecentBadge)
+        },
+        FrameLayout.LayoutParams(
+          FrameLayout.LayoutParams.WRAP_CONTENT,
+          FrameLayout.LayoutParams.WRAP_CONTENT,
+          Gravity.TOP or Gravity.END,
+        ),
+      )
     }
 
   private fun addBadgeIfVisible(
@@ -541,6 +556,129 @@ class WebActivity : AppCompatActivity() {
         setTypeface(typeface, android.graphics.Typeface.BOLD)
         setPadding(18, 8, 18, 8)
       },
+      LinearLayout.LayoutParams(
+        LinearLayout.LayoutParams.WRAP_CONTENT,
+        LinearLayout.LayoutParams.WRAP_CONTENT,
+      ).apply {
+        leftMargin = if (parent.childCount == 0) 0 else 8
+      },
     )
+  }
+
+  private fun injectNotificationPermissionShim() {
+    val initialPermissionState = currentWebNotificationPermissionState()
+    webView.evaluateJavascript(
+      """
+        (function() {
+          if (window.__aionuiNotificationPermissionInstalled) return;
+          window.__aionuiNotificationPermissionInstalled = true;
+          window.__aionuiNotificationPermissionState = window.__aionuiNotificationPermissionState || '$initialPermissionState';
+          window.__aionuiNotificationPermissionCallbacks = {};
+          window.__aionuiResolveNotificationPermission = function(requestId, state) {
+            window.__aionuiNotificationPermissionState = state;
+            var callback = window.__aionuiNotificationPermissionCallbacks[requestId];
+            if (callback) {
+              callback(state);
+              delete window.__aionuiNotificationPermissionCallbacks[requestId];
+            }
+          };
+          var bridge = window.AionUiNotificationBridge;
+          if (!bridge) return;
+          var originalNotification = window.Notification;
+          var requestPermission = function(callback) {
+            return new Promise(function(resolve) {
+              var requestId = String(Date.now()) + '-' + Math.random().toString(16).slice(2);
+              window.__aionuiNotificationPermissionCallbacks[requestId] = function(state) {
+                if (callback) callback(state);
+                resolve(state);
+              };
+              bridge.requestPermission(requestId);
+            });
+          };
+          if (originalNotification) {
+            try {
+              Object.defineProperty(originalNotification, 'permission', {
+                configurable: true,
+                get: function() { return window.__aionuiNotificationPermissionState; }
+              });
+            } catch (e) {}
+            originalNotification.requestPermission = requestPermission;
+          } else {
+            var notificationStub = function() {};
+            notificationStub.requestPermission = requestPermission;
+            try {
+              Object.defineProperty(notificationStub, 'permission', {
+                configurable: true,
+                get: function() { return window.__aionuiNotificationPermissionState; }
+              });
+            } catch (e) {
+              notificationStub.permission = window.__aionuiNotificationPermissionState;
+            }
+            window.Notification = notificationStub;
+          }
+        })();
+      """.trimIndent(),
+      null,
+    )
+  }
+
+  private fun currentWebNotificationPermissionState(): String =
+    if (
+      Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+      ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+        PackageManager.PERMISSION_GRANTED
+    ) {
+      "granted"
+    } else {
+      "default"
+    }
+
+  private fun promptWebNotificationPermission(requestId: String) {
+    val state =
+      WebNotificationPermissionState.from(
+        requiresRuntimePermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
+        androidPermissionGranted =
+          ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED,
+      )
+
+    AlertDialog.Builder(this)
+      .setTitle(R.string.web_notification_prompt_title)
+      .setMessage(R.string.web_notification_prompt_message)
+      .setPositiveButton(R.string.web_notification_prompt_allow) { _, _ ->
+        when (state) {
+          WebNotificationPermissionState.GRANT_AFTER_PROMPT ->
+            resolveWebNotificationPermission(requestId, "granted")
+          WebNotificationPermissionState.REQUEST_RUNTIME_PERMISSION -> {
+            pendingNotificationRequestId = requestId
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+          }
+        }
+      }
+      .setNegativeButton(R.string.web_notification_prompt_deny) { _, _ ->
+        resolveWebNotificationPermission(requestId, "denied")
+      }
+      .setOnCancelListener {
+        resolveWebNotificationPermission(requestId, "denied")
+      }
+      .show()
+  }
+
+  private fun resolveWebNotificationPermission(requestId: String, state: String) {
+    webView.post {
+      webView.evaluateJavascript(
+        "window.__aionuiResolveNotificationPermission && window.__aionuiResolveNotificationPermission('$requestId', '$state');",
+        null,
+      )
+    }
+  }
+
+  inner class NotificationPermissionBridge {
+    @JavascriptInterface
+    fun requestPermission(requestId: String) {
+      runOnUiThread {
+        promptWebNotificationPermission(requestId)
+      }
+    }
   }
 }

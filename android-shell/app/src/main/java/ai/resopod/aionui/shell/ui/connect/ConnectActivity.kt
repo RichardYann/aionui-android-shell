@@ -4,8 +4,10 @@ import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.View
+import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -80,8 +82,7 @@ class ConnectActivity : AppCompatActivity() {
     servers.forEach { server ->
       val presentation = ServerPresentation.from(server, currentUrl)
       val row =
-        LinearLayout(this).apply {
-          orientation = LinearLayout.VERTICAL
+        FrameLayout(this).apply {
           background = AppCompatResources.getDrawable(this@ConnectActivity, R.drawable.server_card_background)
           setPadding(28, 24, 28, 24)
           setOnClickListener { connectToServer(server) }
@@ -91,19 +92,24 @@ class ConnectActivity : AppCompatActivity() {
           }
         }
 
-      val titleRow =
+      val contentColumn =
         LinearLayout(this).apply {
-          orientation = LinearLayout.HORIZONTAL
+          orientation = LinearLayout.VERTICAL
+          setPadding(0, 0, 188, 0)
         }
 
       val title =
         TextView(this).apply {
           text = presentation.primaryText
-          layoutParams =
-            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
           textSize = 16f
           setTextColor(0xFFFFFFFF.toInt())
           setTypeface(typeface, Typeface.BOLD)
+        }
+
+      val badgesRow =
+        LinearLayout(this).apply {
+          orientation = LinearLayout.HORIZONTAL
+          gravity = Gravity.END or Gravity.TOP
         }
 
       val favoriteBadge =
@@ -117,6 +123,17 @@ class ConnectActivity : AppCompatActivity() {
           visibility = if (presentation.showFavoriteBadge) View.VISIBLE else View.GONE
         }
 
+      val recentBadge =
+        TextView(this).apply {
+          background = AppCompatResources.getDrawable(this@ConnectActivity, R.drawable.server_badge_recent)
+          text = getString(R.string.server_badge_recent)
+          setTextColor(0xFFFFFFFF.toInt())
+          textSize = 11f
+          setTypeface(typeface, Typeface.BOLD)
+          setPadding(18, 8, 18, 8)
+          visibility = if (presentation.showRecentBadge) View.VISIBLE else View.GONE
+        }
+
       val subtitle =
         TextView(this).apply {
           text = presentation.secondaryText
@@ -126,28 +143,8 @@ class ConnectActivity : AppCompatActivity() {
           visibility = if (presentation.secondaryText == null) View.GONE else View.VISIBLE
         }
 
-      val statusRow =
-        LinearLayout(this).apply {
-          orientation = LinearLayout.HORIZONTAL
-          visibility = if (presentation.showRecentBadge) View.VISIBLE else View.GONE
-        }
-
-      val recentBadge =
-        TextView(this).apply {
-          background = AppCompatResources.getDrawable(this@ConnectActivity, R.drawable.server_badge_recent)
-          text = getString(R.string.server_badge_recent)
-          setTextColor(0xFFFFFFFF.toInt())
-          textSize = 11f
-          setTypeface(typeface, Typeface.BOLD)
-          setPadding(18, 8, 18, 8)
-        }
-
-      titleRow.addView(title)
-      titleRow.addView(favoriteBadge)
-      statusRow.addView(recentBadge)
-
-      row.addView(titleRow)
-      row.addView(
+      contentColumn.addView(title)
+      contentColumn.addView(
         subtitle,
         LinearLayout.LayoutParams(
           LinearLayout.LayoutParams.MATCH_PARENT,
@@ -156,14 +153,32 @@ class ConnectActivity : AppCompatActivity() {
           topMargin = 8
         },
       )
-      row.addView(
-        statusRow,
+
+      badgesRow.addView(favoriteBadge)
+      badgesRow.addView(
+        recentBadge,
         LinearLayout.LayoutParams(
           LinearLayout.LayoutParams.WRAP_CONTENT,
           LinearLayout.LayoutParams.WRAP_CONTENT,
         ).apply {
-          topMargin = 14
+          leftMargin = 8
         },
+      )
+
+      row.addView(
+        contentColumn,
+        FrameLayout.LayoutParams(
+          FrameLayout.LayoutParams.MATCH_PARENT,
+          FrameLayout.LayoutParams.WRAP_CONTENT,
+        ),
+      )
+      row.addView(
+        badgesRow,
+        FrameLayout.LayoutParams(
+          FrameLayout.LayoutParams.WRAP_CONTENT,
+          FrameLayout.LayoutParams.WRAP_CONTENT,
+          Gravity.TOP or Gravity.END,
+        ),
       )
 
       val params =

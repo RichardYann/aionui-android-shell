@@ -16,6 +16,10 @@
   <string name="web_load_failed">加载失败</string>
   <string name="web_failed_to_load">加载失败：%1$s</string>
   <string name="web_retry">重试</string>
+  <string name="web_notification_prompt_title">允许通知吗？</string>
+  <string name="web_notification_prompt_message">允许后，网页应用可通过手机通知方式显示提醒。</string>
+  <string name="web_notification_prompt_allow">允许</string>
+  <string name="web_notification_prompt_deny">暂不</string>
   <string name="web_downloading">下载中…</string>
   <string name="web_download_failed">下载失败</string>
   <string name="web_select_file">选择文件</string>
