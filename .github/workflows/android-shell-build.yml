@@ -18,6 +18,21 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses > /dev/null
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0"
+
       - name: Setup Gradle wrapper
         shell: bash
         run: |
@@ -33,7 +48,7 @@ jobs:
           set -euo pipefail
           chmod +x android-shell/gradlew
           cd android-shell
-          ./gradlew :app:assembleDebug
+          ./gradlew :app:assembleDebug --stacktrace
 
       - uses: actions/upload-artifact@v4
         with:
