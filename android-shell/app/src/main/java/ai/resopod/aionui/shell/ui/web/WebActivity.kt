@@ -41,7 +41,6 @@ import ai.resopod.aionui.shell.data.ServerEntry
 import ai.resopod.aionui.shell.ui.connect.ConnectActivity
 import ai.resopod.aionui.shell.ui.connect.ConnectScreenMode
 import ai.resopod.aionui.shell.ui.shared.ServerPresentation
-import kotlin.math.min
 
 class WebActivity : AppCompatActivity() {
   private lateinit var btnBack: ImageButton
@@ -440,8 +439,11 @@ class WebActivity : AppCompatActivity() {
     dialog.show()
     dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
     switcherScrollView.post {
-      val maxHeight = (resources.displayMetrics.heightPixels * 0.45f).toInt()
-      val desiredHeight = min(serverList.measuredHeight, maxHeight)
+      val desiredHeight =
+        ServerSwitcherLayout.computeListHeight(
+          contentHeight = serverList.measuredHeight,
+          screenHeight = resources.displayMetrics.heightPixels,
+        )
       switcherScrollView.layoutParams =
         switcherScrollView.layoutParams.apply {
           height = desiredHeight
@@ -478,7 +480,7 @@ class WebActivity : AppCompatActivity() {
               text = presentation.primaryText
               layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
               setTextColor(Color.WHITE)
-              textSize = 16f
+              textSize = 17f
               setTypeface(typeface, android.graphics.Typeface.BOLD)
             },
           )
@@ -491,7 +493,7 @@ class WebActivity : AppCompatActivity() {
         TextView(this@WebActivity).apply {
           text = presentation.secondaryText
           setTextColor(Color.parseColor("#B7D2E8"))
-          textSize = 13f
+          textSize = 12f
           visibility = if (presentation.secondaryText == null) View.GONE else View.VISIBLE
         },
         LinearLayout.LayoutParams(

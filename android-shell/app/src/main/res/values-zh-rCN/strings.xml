@@ -28,5 +28,6 @@
   <string name="server_badge_favorite">收藏</string>
   <string name="server_badge_recent">最近使用</string>
   <string name="server_dialog_title">选择服务器</string>
+  <string name="server_dialog_subtitle">点击卡片即可快速切换。</string>
   <string name="server_add_new">添加或管理服务器</string>
 </resources>

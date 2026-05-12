@@ -40,5 +40,6 @@
   <string name="server_badge_recent">Recent</string>
   <string name="server_favorite_prefix">★ %1$s</string>
   <string name="server_dialog_title">Choose server</string>
+  <string name="server_dialog_subtitle">Tap a card to switch quickly.</string>
   <string name="server_add_new">Add or manage servers</string>
 </resources>

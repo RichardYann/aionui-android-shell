@@ -12,14 +12,23 @@
     android:layout_height="wrap_content"
     android:text="@string/server_dialog_title"
     android:textColor="#FFFFFFFF"
-    android:textSize="20sp"
+    android:textSize="22sp"
     android:textStyle="bold" />
+
+  <TextView
+    android:id="@+id/switcherSubtitle"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:text="@string/server_dialog_subtitle"
+    android:textColor="#AFC6D8"
+    android:textSize="13sp" />
 
   <ScrollView
     android:id="@+id/switcherScrollView"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="16dp"
+    android:layout_marginTop="18dp"
     android:fillViewport="true">
 
     <LinearLayout
@@ -29,14 +38,29 @@
       android:orientation="vertical" />
   </ScrollView>
 
-  <Button
-    android:id="@+id/switcherManageAction"
+  <LinearLayout
     android:layout_width="match_parent"
-    android:layout_height="48dp"
+    android:layout_height="wrap_content"
     android:layout_marginTop="16dp"
-    android:background="@drawable/nav_change_server_button"
-    android:text="@string/server_add_new"
-    android:textAllCaps="false"
-    android:textColor="#F3FAFF"
-    android:textStyle="bold" />
+    android:background="@drawable/switcher_footer_background"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <View
+      android:layout_width="match_parent"
+      android:layout_height="1dp"
+      android:alpha="0.35"
+      android:background="#5D7A90" />
+
+    <Button
+      android:id="@+id/switcherManageAction"
+      android:layout_width="match_parent"
+      android:layout_height="48dp"
+      android:layout_marginTop="14dp"
+      android:background="@drawable/nav_change_server_button"
+      android:text="@string/server_add_new"
+      android:textAllCaps="false"
+      android:textColor="#F3FAFF"
+      android:textStyle="bold" />
+  </LinearLayout>
 </LinearLayout>
