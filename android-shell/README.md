@@ -25,6 +25,24 @@ This repo includes a GitHub Actions workflow that builds a debug-signed APK and 
 - Workflow: `.github/workflows/android-shell-build.yml`
 - Artifact: `app-debug-apk` → `app-debug.apk`
 
+## Release publishing (GitHub Actions)
+
+This repo can also publish a release APK through a manual GitHub Actions workflow.
+
+1. Open `.github/workflows/android-release.yml`
+2. Click `Run workflow`
+3. Enter a version such as `0.1.0`
+4. Wait for CI to:
+   - build the release APK
+   - create tag `v0.1.0`
+   - create GitHub Release `v0.1.0`
+   - upload `aionui-shell-v0.1.0.apk`
+
+Current note:
+
+- This workflow prioritizes release automation first
+- Formal production signing can be added later
+
 ## APK outputs (when built locally)
 
 - Debug: `android-shell/app/build/outputs/apk/debug/app-debug.apk`
