@@ -170,6 +170,47 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
-          name: ${{ env.RELEASE_TAG }}
+          name: AionUi Shell for Android / AionUi Android 客户端 ${{ env.RELEASE_TAG }}
           files: ${{ env.RELEASE_FILE }}
-          generate_release_notes: true
+          body: |
+            ## Overview / 版本说明
+
+            AionUi Shell for Android is a lightweight Android shell for AionUi WebUI.
+            AionUi Android 客户端是一个面向 AionUi WebUI 的轻量 Android 壳应用。
+
+            ## Highlights / 本版亮点
+
+            - Connect to your AionUi server quickly and reopen the last server on later launches
+            - Immersive top navigation that stays out of the way and reveals on demand
+            - Clear loading feedback during connection and refresh
+            - Supports file upload and Android system downloads
+            - Updated launcher branding with the AionUI logo
+            - 快速连接你的 AionUi 服务器，并在下次启动时自动重新打开最近一次连接
+            - 顶部导航更沉浸，需要时再唤出，不打断页面内容
+            - 连接与刷新过程中提供清晰的加载反馈
+            - 支持文件上传与 Android 系统下载
+            - 启动图标已更新为 AionUI 品牌标识
+
+            ## Downloads / 下载内容
+
+            - Release asset: `${{ env.RELEASE_FILE }}`
+            - 下载文件：`${{ env.RELEASE_FILE }}`
+
+            ## Install / 安装方式
+
+            - Install this build by downloading the APK asset from this release page
+            - If Android blocks the installation, allow installation from unknown sources for this install
+            - 可直接从本发布页下载 APK 安装
+            - 如果系统拦截安装，请为本次安装允许“未知来源应用安装”
+
+            ## Current Limitations / 当前限制
+
+            - This stage prioritizes release automation first
+            - Formal production signing will be added later
+            - 当前阶段优先完成自动化发布链路
+            - 正式生产签名将在后续版本补充
+
+            ## Changelog / 更新记录
+
+            - Full changelog: https://github.com/RichardYann/aionui-android-shell/commits/${{ env.RELEASE_TAG }}
+            - 完整更新记录：https://github.com/RichardYann/aionui-android-shell/commits/${{ env.RELEASE_TAG }}
