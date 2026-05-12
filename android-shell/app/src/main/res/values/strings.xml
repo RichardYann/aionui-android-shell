@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">AionUi Shell</string>
+
+  <string name="connect_title">Connect</string>
+  <string name="connect_url_hint">AionUi WebUI URL (http/https)</string>
+  <string name="connect_button">Connect</string>
+
+  <string name="web_change_server">Change server</string>
+  <string name="web_load_failed">Load failed</string>
+  <string name="web_failed_to_load">Failed to load: %1$s</string>
+  <string name="web_retry">Retry</string>
+  <string name="web_open_in_browser">Open in browser</string>
+  <string name="web_copy_url">Copy URL</string>
+  <string name="web_copied">Copied</string>
+  <string name="web_downloading">Downloading…</string>
+  <string name="web_download_failed">Download failed</string>
+  <string name="web_select_file">Select file</string>
+  <string name="web_exit_hint">Press back again to exit</string>
+</resources>
