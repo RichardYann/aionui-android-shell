@@ -122,24 +122,34 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          SOURCE=""
-          for candidate in \
-            "android-shell/app/build/outputs/apk/release/app-release.apk" \
-            "android-shell/app/build/outputs/apk/release/app-release-unsigned.apk"
-          do
-            if [ -f "$candidate" ]; then
-              SOURCE="$candidate"
-              break
-            fi
-          done
-
-          if [ -z "$SOURCE" ]; then
-            echo "release APK not found in expected release output locations"
+          SOURCE="android-shell/app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$SOURCE" ]; then
+            echo "release APK not found at: $SOURCE"
             find android-shell/app/build/outputs/apk -maxdepth 3 -type f -name "*.apk" -print || true
             exit 1
           fi
 
           cp "$SOURCE" "$RELEASE_FILE"
+
+      - name: Verify APK signature
+        if: ${{ success() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [ -z "$SDK_ROOT" ]; then
+            echo "ANDROID_SDK_ROOT/ANDROID_HOME is not set"
+            exit 1
+          fi
+
+          APKSIGNER="$SDK_ROOT/build-tools/34.0.0/apksigner"
+          if [ ! -x "$APKSIGNER" ]; then
+            echo "apksigner not found at $APKSIGNER"
+            find "$SDK_ROOT" -maxdepth 4 -type f -name apksigner -print || true
+            exit 1
+          fi
+
+          "$APKSIGNER" verify --verbose --print-certs "$RELEASE_FILE"
 
       - name: Upload release APK artifact
         if: ${{ success() }}
