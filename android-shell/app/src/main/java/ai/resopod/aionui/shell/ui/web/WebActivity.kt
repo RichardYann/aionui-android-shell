@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.graphics.Color
 import android.webkit.CookieManager
 import android.webkit.DownloadListener
 import android.webkit.URLUtil
@@ -36,8 +37,14 @@ import ai.resopod.aionui.shell.data.AppPrefs
 import ai.resopod.aionui.shell.ui.connect.ConnectActivity
 
 class WebActivity : AppCompatActivity() {
+  private lateinit var btnBack: ImageButton
+  private lateinit var btnRefresh: ImageButton
+  private lateinit var btnMore: ImageButton
+  private lateinit var btnChangeServer: Button
   private lateinit var navBar: View
   private lateinit var navRevealHandle: View
+  private lateinit var topLoadingBar: View
+  private lateinit var centerLoadingOverlay: View
   private lateinit var webView: WebView
   private lateinit var errorOverlay: android.view.View
   private lateinit var errorMessage: TextView
@@ -47,6 +54,7 @@ class WebActivity : AppCompatActivity() {
   private var filePathCallback: ValueCallback<Array<Uri>>? = null
   private var navShown = false
   private var navGestureStartY = 0f
+  private var isPageLoading = true
   private val navAutoHideHandler = Handler(Looper.getMainLooper())
   private val navAutoHideRunnable = Runnable { hideNavigation() }
 
@@ -84,14 +92,16 @@ class WebActivity : AppCompatActivity() {
 
     navBar = findViewById(R.id.navBar)
     navRevealHandle = findViewById(R.id.navRevealHandle)
+    topLoadingBar = findViewById(R.id.topLoadingBar)
+    centerLoadingOverlay = findViewById(R.id.centerLoadingOverlay)
     webView = findViewById(R.id.webView)
     errorOverlay = findViewById(R.id.errorOverlay)
     errorMessage = errorOverlay.findViewById(R.id.errorMessage)
 
-    val btnBack = findViewById<ImageButton>(R.id.btnBack)
-    val btnRefresh = findViewById<ImageButton>(R.id.btnRefresh)
-    val btnMore = findViewById<ImageButton>(R.id.btnMore)
-    val btnChangeServer = findViewById<Button>(R.id.btnChangeServer)
+    btnBack = findViewById(R.id.btnBack)
+    btnRefresh = findViewById(R.id.btnRefresh)
+    btnMore = findViewById(R.id.btnMore)
+    btnChangeServer = findViewById(R.id.btnChangeServer)
 
     val btnRetry = errorOverlay.findViewById<Button>(R.id.btnRetry)
     val btnErrorChangeServer = errorOverlay.findViewById<Button>(R.id.btnErrorChangeServer)
@@ -197,8 +207,27 @@ class WebActivity : AppCompatActivity() {
           }
         }
 
+        override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
+          isPageLoading = true
+          topLoadingBar.visibility = View.VISIBLE
+          centerLoadingOverlay.visibility = View.VISIBLE
+          keepNavigationVisible()
+        }
+
+        override fun onPageFinished(view: WebView, url: String?) {
+          isPageLoading = false
+          topLoadingBar.visibility = View.GONE
+          centerLoadingOverlay.visibility = View.GONE
+          hideError()
+          keepNavigationVisible()
+          syncNavigationColor()
+        }
+
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
           if (request.isForMainFrame) {
+            isPageLoading = false
+            topLoadingBar.visibility = View.GONE
+            centerLoadingOverlay.visibility = View.GONE
             navAutoHideHandler.removeCallbacks(navAutoHideRunnable)
             navBar.translationY = 0f
             navShown = true
@@ -283,7 +312,7 @@ class WebActivity : AppCompatActivity() {
   }
 
   private fun hideNavigation() {
-    if (!navShown || errorOverlay.visibility == View.VISIBLE) return
+    if (!navShown || errorOverlay.visibility == View.VISIBLE || isPageLoading) return
     navShown = false
     navBar.animate().translationY(-navBar.height.toFloat()).setDuration(180).start()
   }
@@ -296,6 +325,61 @@ class WebActivity : AppCompatActivity() {
   private fun scheduleNavigationHide() {
     navAutoHideHandler.removeCallbacks(navAutoHideRunnable)
     navAutoHideHandler.postDelayed(navAutoHideRunnable, 2500)
+  }
+
+  private fun syncNavigationColor() {
+    webView.evaluateJavascript(
+      """
+        (function() {
+          const bodyStyle = window.getComputedStyle(document.body || document.documentElement);
+          const htmlStyle = window.getComputedStyle(document.documentElement);
+          return JSON.stringify({
+            body: bodyStyle ? bodyStyle.backgroundColor : "",
+            html: htmlStyle ? htmlStyle.backgroundColor : ""
+          });
+        })();
+      """.trimIndent(),
+    ) { raw ->
+      val decoded = raw?.trim()?.removePrefix("\"")?.removeSuffix("\"")?.replace("\\\"", "\"")
+      val candidates = listOf(
+        decoded?.substringAfter("\"body\":\"", "")?.substringBefore("\""),
+        decoded?.substringAfter("\"html\":\"", "")?.substringBefore("\""),
+      )
+      val background = candidates.firstNotNullOfOrNull(::parseCssColor) ?: Color.parseColor("#101820")
+      val foreground = pickForegroundColor(background)
+      navBar.setBackgroundColor(background)
+      btnChangeServer.setTextColor(foreground)
+      btnBack.setColorFilter(foreground)
+      btnRefresh.setColorFilter(foreground)
+      btnMore.setColorFilter(foreground)
+    }
+  }
+
+  private fun parseCssColor(raw: String?): Int? {
+    val value = raw?.trim()?.lowercase().orEmpty()
+    if (value.isBlank() || value == "transparent" || value == "rgba(0, 0, 0, 0)") return null
+    return runCatching {
+      when {
+        value.startsWith("#") -> Color.parseColor(value)
+        value.startsWith("rgb(") -> {
+          val parts = value.removePrefix("rgb(").removeSuffix(")").split(",").map { it.trim().toInt() }
+          Color.rgb(parts[0], parts[1], parts[2])
+        }
+        value.startsWith("rgba(") -> {
+          val parts = value.removePrefix("rgba(").removeSuffix(")").split(",").map { it.trim() }
+          val alpha = parts[3].toFloat()
+          if (alpha <= 0f) return null
+          Color.argb((alpha * 255).toInt(), parts[0].toInt(), parts[1].toInt(), parts[2].toInt())
+        }
+        else -> Color.parseColor(value)
+      }
+    }.getOrNull()
+  }
+
+  private fun pickForegroundColor(background: Int): Int {
+    val darkness =
+      1 - (0.299 * Color.red(background) + 0.587 * Color.green(background) + 0.114 * Color.blue(background)) / 255
+    return if (darkness >= 0.5) Color.WHITE else Color.parseColor("#111111")
   }
 
   private fun goToConnect() {

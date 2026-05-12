@@ -14,11 +14,21 @@
     android:layout_height="14dp"
     android:layout_gravity="top" />
 
+  <ProgressBar
+    android:id="@+id/topLoadingBar"
+    style="?android:attr/progressBarStyleHorizontal"
+    android:layout_width="match_parent"
+    android:layout_height="3dp"
+    android:layout_gravity="top"
+    android:indeterminate="true"
+    android:visibility="gone" />
+
   <LinearLayout
     android:id="@+id/navBar"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_gravity="top"
+    android:background="#FF101820"
     android:orientation="horizontal"
     android:padding="8dp"
     android:translationY="-72dp">
@@ -27,7 +37,7 @@
       android:id="@+id/btnBack"
       android:layout_width="40dp"
       android:layout_height="40dp"
-      android:contentDescription="Back"
+      android:contentDescription="@string/web_back"
       android:background="?attr/selectableItemBackgroundBorderless"
       android:src="@android:drawable/ic_media_previous" />
 
@@ -35,7 +45,7 @@
       android:id="@+id/btnRefresh"
       android:layout_width="40dp"
       android:layout_height="40dp"
-      android:contentDescription="Refresh"
+      android:contentDescription="@string/web_refresh"
       android:background="?attr/selectableItemBackgroundBorderless"
       android:src="@android:drawable/ic_popup_sync" />
 
@@ -43,7 +53,7 @@
       android:id="@+id/btnMore"
       android:layout_width="40dp"
       android:layout_height="40dp"
-      android:contentDescription="More"
+      android:contentDescription="@string/web_more"
       android:background="?attr/selectableItemBackgroundBorderless"
       android:src="@android:drawable/ic_menu_more" />
 
@@ -58,6 +68,21 @@
       android:layout_height="40dp"
       android:text="@string/web_change_server" />
   </LinearLayout>
+
+  <FrameLayout
+    android:id="@+id/centerLoadingOverlay"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#33000000"
+    android:visibility="gone">
+
+    <ProgressBar
+      android:id="@+id/centerLoadingSpinner"
+      android:layout_width="40dp"
+      android:layout_height="40dp"
+      android:layout_gravity="center"
+      android:contentDescription="@string/web_loading" />
+  </FrameLayout>
 
   <include
     android:id="@+id/errorOverlay"

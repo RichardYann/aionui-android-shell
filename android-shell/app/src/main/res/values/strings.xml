@@ -7,6 +7,10 @@
   <string name="connect_button">Connect</string>
 
   <string name="web_change_server">Change server</string>
+  <string name="web_back">Back</string>
+  <string name="web_refresh">Refresh</string>
+  <string name="web_more">More</string>
+  <string name="web_loading">Loading</string>
   <string name="web_load_failed">Load failed</string>
   <string name="web_failed_to_load">Failed to load: %1$s</string>
   <string name="web_retry">Retry</string>
