@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="connect_name_hint">服务器名称（可选）</string>
+  <string name="connect_url_hint">AionUi WebUI 地址（http/https）</string>
+  <string name="connect_button">连接</string>
+  <string name="connect_card_title">快速连接</string>
+  <string name="connect_card_subtitle">可直接连接已保存服务器，或在下方新增服务器。</string>
+  <string name="connect_saved_servers">已保存服务器</string>
+  <string name="connect_saved_servers_subtitle">点击连接，长按可重命名、收藏或删除。</string>
+  <string name="connect_saved_servers_empty">暂时还没有保存的服务器，可先在上方添加一个。</string>
+
+  <string name="web_change_server">切换服务器</string>
+  <string name="web_back">返回</string>
+  <string name="web_refresh">刷新</string>
+  <string name="web_loading">加载中</string>
+  <string name="web_load_failed">加载失败</string>
+  <string name="web_failed_to_load">加载失败：%1$s</string>
+  <string name="web_retry">重试</string>
+  <string name="web_downloading">下载中…</string>
+  <string name="web_download_failed">下载失败</string>
+  <string name="web_select_file">选择文件</string>
+  <string name="web_exit_hint">再次返回即可退出</string>
+
+  <string name="server_edit">编辑</string>
+  <string name="server_delete">删除</string>
+  <string name="server_favorite">收藏</string>
+  <string name="server_unfavorite">取消收藏</string>
+  <string name="server_badge_favorite">收藏</string>
+  <string name="server_badge_recent">最近使用</string>
+  <string name="server_dialog_title">选择服务器</string>
+  <string name="server_add_new">添加或管理服务器</string>
+</resources>

@@ -4,7 +4,6 @@ import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.View
-import android.widget.ImageButton
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -16,14 +15,12 @@ import ai.resopod.aionui.shell.R
 import ai.resopod.aionui.shell.data.AppPrefs
 import ai.resopod.aionui.shell.data.ServerEntry
 import ai.resopod.aionui.shell.ui.web.WebActivity
+import ai.resopod.aionui.shell.ui.shared.ServerPresentation
 import ai.resopod.aionui.shell.util.UrlUtil
 
 class ConnectActivity : AppCompatActivity() {
   private lateinit var prefs: AppPrefs
   private lateinit var screenMode: ConnectScreenMode
-  private lateinit var backButton: ImageButton
-  private lateinit var connectTitle: TextView
-  private lateinit var connectSubtitle: TextView
   private lateinit var nameInput: EditText
   private lateinit var urlInput: EditText
   private lateinit var savedServersTitle: TextView
@@ -35,16 +32,12 @@ class ConnectActivity : AppCompatActivity() {
 
     prefs = AppPrefs(this)
     screenMode = ConnectScreenMode.fromIntentValue(intent?.getStringExtra(EXTRA_LAUNCH_MODE))
-    backButton = findViewById(R.id.btnBackFromConnect)
-    connectTitle = findViewById(R.id.connectTitle)
-    connectSubtitle = findViewById(R.id.connectSubtitle)
     nameInput = findViewById(R.id.nameInput)
     urlInput = findViewById(R.id.urlInput)
     savedServersTitle = findViewById(R.id.savedServersTitle)
     serverListContainer = findViewById(R.id.serverListContainer)
     val connectButton = findViewById<Button>(R.id.connectButton)
 
-    configureHeader()
     prefs.getLastUrl()?.let(urlInput::setText)
     renderServerList()
 
@@ -74,26 +67,10 @@ class ConnectActivity : AppCompatActivity() {
     finish()
   }
 
-  private fun configureHeader() {
-    backButton.visibility = if (screenMode.showsBackButton) View.VISIBLE else View.GONE
-    backButton.setOnClickListener { finish() }
-    connectTitle.text =
-      if (screenMode == ConnectScreenMode.MANAGE) {
-        getString(R.string.connect_title_manage)
-      } else {
-        getString(R.string.connect_title_entry)
-      }
-    connectSubtitle.text =
-      if (screenMode == ConnectScreenMode.MANAGE) {
-        getString(R.string.connect_subtitle_manage)
-      } else {
-        getString(R.string.connect_subtitle_entry)
-      }
-  }
-
   private fun renderServerList() {
     serverListContainer.removeAllViews()
     val servers = prefs.getServers()
+    val currentUrl = prefs.getLastUrl()
     if (servers.isEmpty()) {
       savedServersTitle.visibility = View.VISIBLE
       serverListContainer.addView(createEmptyStateView())
@@ -101,6 +78,7 @@ class ConnectActivity : AppCompatActivity() {
     }
 
     servers.forEach { server ->
+      val presentation = ServerPresentation.from(server, currentUrl)
       val row =
         LinearLayout(this).apply {
           orientation = LinearLayout.VERTICAL
@@ -120,7 +98,7 @@ class ConnectActivity : AppCompatActivity() {
 
       val title =
         TextView(this).apply {
-          text = server.primaryLabel()
+          text = presentation.primaryText
           layoutParams =
             LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
           textSize = 16f
@@ -136,21 +114,22 @@ class ConnectActivity : AppCompatActivity() {
           textSize = 11f
           setTypeface(typeface, Typeface.BOLD)
           setPadding(18, 8, 18, 8)
-          visibility = if (server.isFavorite) View.VISIBLE else View.GONE
+          visibility = if (presentation.showFavoriteBadge) View.VISIBLE else View.GONE
         }
 
       val subtitle =
         TextView(this).apply {
-          text = server.url
+          text = presentation.secondaryText
           alpha = 0.8f
           setTextColor(0xFFB7D2E8.toInt())
           textSize = 13f
+          visibility = if (presentation.secondaryText == null) View.GONE else View.VISIBLE
         }
 
       val statusRow =
         LinearLayout(this).apply {
           orientation = LinearLayout.HORIZONTAL
-          visibility = if (server.url == prefs.getLastUrl()) View.VISIBLE else View.GONE
+          visibility = if (presentation.showRecentBadge) View.VISIBLE else View.GONE
         }
 
       val recentBadge =

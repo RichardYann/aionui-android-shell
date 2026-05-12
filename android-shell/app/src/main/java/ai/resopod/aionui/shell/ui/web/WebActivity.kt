@@ -2,10 +2,9 @@ package ai.resopod.aionui.shell.ui.web
 
 import android.app.DownloadManager
 import android.content.ActivityNotFoundException
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -22,26 +21,29 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.net.toUri
 import ai.resopod.aionui.shell.R
 import ai.resopod.aionui.shell.data.AppPrefs
 import ai.resopod.aionui.shell.data.ServerEntry
 import ai.resopod.aionui.shell.ui.connect.ConnectActivity
 import ai.resopod.aionui.shell.ui.connect.ConnectScreenMode
+import ai.resopod.aionui.shell.ui.shared.ServerPresentation
 
 class WebActivity : AppCompatActivity() {
   private lateinit var btnBack: ImageButton
   private lateinit var btnRefresh: ImageButton
-  private lateinit var btnMore: ImageButton
   private lateinit var btnChangeServer: Button
   private lateinit var navBar: View
   private lateinit var navRevealHandle: View
@@ -112,7 +114,6 @@ class WebActivity : AppCompatActivity() {
 
     btnBack = findViewById(R.id.btnBack)
     btnRefresh = findViewById(R.id.btnRefresh)
-    btnMore = findViewById(R.id.btnMore)
     btnChangeServer = findViewById(R.id.btnChangeServer)
 
     val btnRetry = errorOverlay.findViewById<Button>(R.id.btnRetry)
@@ -135,11 +136,6 @@ class WebActivity : AppCompatActivity() {
       hideError()
       webView.reload()
     }
-    btnMore.setOnClickListener {
-      keepNavigationVisible()
-      showMoreMenu()
-    }
-
     navRevealHandle.setOnTouchListener { _, event ->
       when (event.actionMasked) {
         MotionEvent.ACTION_DOWN -> {
@@ -363,7 +359,6 @@ class WebActivity : AppCompatActivity() {
       btnChangeServer.setTextColor(foreground)
       btnBack.setColorFilter(foreground)
       btnRefresh.setColorFilter(foreground)
-      btnMore.setColorFilter(foreground)
     }
   }
 
@@ -409,15 +404,38 @@ class WebActivity : AppCompatActivity() {
       return
     }
 
-    val labels = servers.map { "${it.primaryLabel()}\n${it.url}" }.toTypedArray()
-    AlertDialog.Builder(this)
-      .setTitle(R.string.server_dialog_title)
-      .setItems(labels) { _, which ->
-        switchToServer(servers[which])
-      }
-      .setPositiveButton(R.string.server_add_new) { _, _ -> goToConnect() }
-      .setNegativeButton(android.R.string.cancel, null)
-      .show()
+    val content = layoutInflater.inflate(R.layout.dialog_server_switcher, null)
+    val serverList = content.findViewById<LinearLayout>(R.id.switcherServerList)
+    val manageAction = content.findViewById<Button>(R.id.switcherManageAction)
+    val currentUrl = prefs.getLastUrl()
+    val dialog =
+      AlertDialog.Builder(this)
+        .setView(content)
+        .create()
+
+    servers.forEach { server ->
+      serverList.addView(
+        createSwitcherCard(
+          server = server,
+          presentation = ServerPresentation.from(server, currentUrl),
+          dialog = dialog,
+        ),
+        LinearLayout.LayoutParams(
+          LinearLayout.LayoutParams.MATCH_PARENT,
+          LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply {
+          bottomMargin = 14
+        },
+      )
+    }
+
+    manageAction.setOnClickListener {
+      dialog.dismiss()
+      goToConnect()
+    }
+
+    dialog.show()
+    dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
   }
 
   private fun switchToServer(server: ServerEntry) {
@@ -426,28 +444,90 @@ class WebActivity : AppCompatActivity() {
     webView.loadUrl(server.url)
   }
 
-  private fun showMoreMenu() {
-    val currentUrl = webView.url ?: prefs.getLastUrl().orEmpty()
-    val items = arrayOf(getString(R.string.web_copy_url), getString(R.string.web_open_in_browser))
-    AlertDialog.Builder(this)
-      .setItems(items) { _, which ->
-        when (which) {
-          0 -> copyToClipboard(currentUrl)
-          1 -> openInBrowser(currentUrl)
-        }
+  private fun createSwitcherCard(
+    server: ServerEntry,
+    presentation: ServerPresentation,
+    dialog: AlertDialog,
+  ): View =
+    LinearLayout(this).apply {
+      orientation = LinearLayout.VERTICAL
+      background = AppCompatResources.getDrawable(this@WebActivity, R.drawable.server_card_background)
+      setPadding(24, 20, 24, 20)
+      setOnClickListener {
+        dialog.dismiss()
+        switchToServer(server)
       }
-      .show()
-  }
+      addView(
+        LinearLayout(this@WebActivity).apply {
+          orientation = LinearLayout.HORIZONTAL
+          gravity = Gravity.CENTER_VERTICAL
 
-  private fun copyToClipboard(text: String) {
-    val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    cm.setPrimaryClip(ClipData.newPlainText("url", text))
-    Toast.makeText(this, getString(R.string.web_copied), Toast.LENGTH_SHORT).show()
-  }
+          addView(
+            TextView(this@WebActivity).apply {
+              text = presentation.primaryText
+              layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+              setTextColor(Color.WHITE)
+              textSize = 16f
+              setTypeface(typeface, android.graphics.Typeface.BOLD)
+            },
+          )
 
-  private fun openInBrowser(url: String) {
-    try {
-      startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
-    } catch (_: ActivityNotFoundException) {}
+          addBadgeIfVisible(this, R.drawable.server_badge_favorite, R.string.server_badge_favorite, presentation.showFavoriteBadge)
+        },
+      )
+
+      addView(
+        TextView(this@WebActivity).apply {
+          text = presentation.secondaryText
+          setTextColor(Color.parseColor("#B7D2E8"))
+          textSize = 13f
+          visibility = if (presentation.secondaryText == null) View.GONE else View.VISIBLE
+        },
+        LinearLayout.LayoutParams(
+          LinearLayout.LayoutParams.MATCH_PARENT,
+          LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply {
+          topMargin = 8
+        },
+      )
+
+      if (presentation.showRecentBadge) {
+        addView(
+          TextView(this@WebActivity).apply {
+            background = AppCompatResources.getDrawable(this@WebActivity, R.drawable.server_badge_recent)
+            text = getString(R.string.server_badge_recent)
+            setTextColor(Color.parseColor("#04111A"))
+            textSize = 11f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setPadding(18, 8, 18, 8)
+          },
+          LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+          ).apply {
+            topMargin = 14
+          },
+        )
+      }
+    }
+
+  private fun addBadgeIfVisible(
+    parent: LinearLayout,
+    backgroundRes: Int,
+    textRes: Int,
+    visible: Boolean,
+  ) {
+    if (!visible) return
+
+    parent.addView(
+      TextView(this).apply {
+        background = AppCompatResources.getDrawable(this@WebActivity, backgroundRes)
+        text = getString(textRes)
+        setTextColor(Color.parseColor("#04111A"))
+        textSize = 11f
+        setTypeface(typeface, android.graphics.Typeface.BOLD)
+        setPadding(18, 8, 18, 8)
+      },
+    )
   }
 }

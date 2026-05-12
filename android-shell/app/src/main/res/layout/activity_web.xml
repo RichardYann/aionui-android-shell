@@ -10,9 +10,9 @@
 
   <View
     android:id="@+id/navRevealHandle"
-    android:layout_width="match_parent"
-    android:layout_height="72dp"
-    android:layout_gravity="top" />
+    android:layout_width="220dp"
+    android:layout_height="84dp"
+    android:layout_gravity="top|center_horizontal" />
 
   <ProgressBar
     android:id="@+id/topLoadingBar"
@@ -28,9 +28,12 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_gravity="top"
-    android:background="#FF101820"
+    android:background="#FF121923"
     android:orientation="horizontal"
-    android:padding="8dp"
+    android:paddingStart="10dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="10dp"
+    android:paddingBottom="8dp"
     android:translationY="-72dp">
 
     <ImageButton
@@ -49,14 +52,6 @@
       android:background="?attr/selectableItemBackgroundBorderless"
       android:src="@android:drawable/ic_popup_sync" />
 
-    <ImageButton
-      android:id="@+id/btnMore"
-      android:layout_width="40dp"
-      android:layout_height="40dp"
-      android:contentDescription="@string/web_more"
-      android:background="?attr/selectableItemBackgroundBorderless"
-      android:src="@android:drawable/ic_menu_more" />
-
     <View
       android:layout_width="0dp"
       android:layout_height="0dp"
@@ -66,6 +61,7 @@
       android:id="@+id/btnChangeServer"
       android:layout_width="wrap_content"
       android:layout_height="40dp"
+      android:background="@drawable/nav_change_server_button"
       android:text="@string/web_change_server" />
   </LinearLayout>
 
