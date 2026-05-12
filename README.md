@@ -8,12 +8,12 @@ Bring your self-hosted AionUi experience to Android with a focused WebView shell
 
 ## ✨ Features / 功能
 
-- Connect to any AionUi WebUI server through a simple first-run setup
+- Connect to your AionUi WebUI server through a simple first-run setup
 - Automatically reopen the last connected server on later launches
 - Navigate with back, refresh, and change-server controls
 - Support file upload through standard web file inputs
 - Download files through Android system DownloadManager
-- 首次启动可快速输入并连接任意 AionUi WebUI 地址
+- 首次启动可快速输入并连接 AionUi WebUI 服务器
 - 后续启动可自动重新打开最近一次连接的服务器
 - 提供返回、刷新、切换服务器等常用导航能力
 - 支持网页中的标准文件上传能力
@@ -24,38 +24,26 @@ Bring your self-hosted AionUi experience to Android with a focused WebView shell
 - Lightweight and focused: open your AionUi workspace without extra native complexity
 - Immersive navigation: the top bar stays hidden until you intentionally reveal it
 - Clear loading feedback: connection and refresh states are easier to understand
-- Self-hosted friendly: simple URL-based access flow for personal deployments
-- AionUI branding: launcher icon and app presence now better reflect the product identity
+- Self-hosted friendly: simple URL-based access for personal and team deployments
+- AionUI branding: launcher icon and visual presence align with the product identity
 - 轻量专注：无需复杂原生层，就能快速进入 AionUi 工作界面
 - 沉浸体验：顶部导航默认隐藏，需要时再唤出
 - 加载清晰：连接与刷新状态更容易理解
 - 自托管友好：适合个人或团队通过 URL 快速接入
 - 品牌一致：图标与整体观感更贴近 AionUI 产品形象
 
-## 📦 Release / 发布下载
+## 🙏 Acknowledgments
 
-- Latest releases: https://github.com/RichardYann/aionui-android-shell/releases
-- APK naming pattern: `aionui-shell-v<version>.apk`
-- Current release flow prioritizes automation first, with formal production signing to be added later
-- 最新版本下载入口：https://github.com/RichardYann/aionui-android-shell/releases
-- APK 命名规则：`aionui-shell-v<version>.apk`
-- 当前发布流程优先打通自动化链路，正式生产签名将在后续补充
+- Thanks to the AionUi project for the product vision and ecosystem foundation
+- Thanks to Trae SOLO for completing this project end-to-end
+- 感谢 AionUi 项目提供产品方向与生态基础
+- 感谢 Trae SOLO 完整完成了本项目
+- This project was completed entirely by Trae SOLO
+- 本项目完全由 Trae SOLO 完成
 
-## 🛠️ Build / 构建
+## 📄 License
 
-### Open in Android Studio
-
-1. Open `android-shell/`
-2. Let Android Studio sync Gradle
-3. Run on a device or emulator
-
-### GitHub Actions
-
-- Debug workflow: `.github/workflows/android-shell-build.yml`
-- Release workflow: `.github/workflows/android-release.yml`
-- Release artifact: `aionui-shell-v<version>.apk`
-
-### Local APK Outputs
-
-- Debug: `android-shell/app/build/outputs/apk/debug/app-debug.apk`
-- Release: `android-shell/app/build/outputs/apk/release/app-release.apk`
+- Released under the MIT License
+- 本项目采用 MIT License 开源
+- See `LICENSE` for details
+- 许可详情见仓库根目录 `LICENSE`
