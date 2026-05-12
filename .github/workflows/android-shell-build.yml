@@ -68,9 +68,26 @@ jobs:
           set -euo pipefail
           chmod +x android-shell/gradlew
           cd android-shell
-          ./gradlew :app:assembleDebug --stacktrace
+          set +e
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee build-debug.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "$EXIT_CODE" > build-debug.exitcode
+          set -e
+          exit "$EXIT_CODE"
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload build logs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            android-shell/build-debug.log
+            android-shell/build-debug.exitcode
+          if-no-files-found: warn
+
+      - name: Upload debug APK
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
           path: android-shell/app/build/outputs/apk/debug/app-debug.apk
