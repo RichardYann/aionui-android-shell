@@ -14,9 +14,18 @@
     android:textStyle="bold" />
 
   <EditText
+    android:id="@+id/nameInput"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:hint="@string/connect_name_hint"
+    android:inputType="textPersonName"
+    android:singleLine="true" />
+
+  <EditText
     android:id="@+id/urlInput"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginTop="12dp"
     android:hint="@string/connect_url_hint"
     android:inputType="textUri"
     android:singleLine="true" />
@@ -27,4 +36,25 @@
     android:layout_height="wrap_content"
     android:layout_marginTop="16dp"
     android:text="@string/connect_button" />
+
+  <TextView
+    android:id="@+id/savedServersTitle"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="24dp"
+    android:text="@string/connect_saved_servers"
+    android:textStyle="bold" />
+
+  <ScrollView
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_marginTop="12dp"
+    android:layout_weight="1">
+
+    <LinearLayout
+      android:id="@+id/serverListContainer"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="vertical" />
+  </ScrollView>
 </LinearLayout>

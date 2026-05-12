@@ -3,8 +3,11 @@
   <string name="app_name">AionUi Shell</string>
 
   <string name="connect_title">Connect</string>
+  <string name="connect_name_hint">Server name (optional)</string>
   <string name="connect_url_hint">AionUi WebUI URL (http/https)</string>
   <string name="connect_button">Connect</string>
+  <string name="connect_saved_servers">Saved servers</string>
+  <string name="connect_saved_servers_empty">No saved servers yet. Add one above to start quickly next time.</string>
 
   <string name="web_change_server">Change server</string>
   <string name="web_back">Back</string>
@@ -21,4 +24,11 @@
   <string name="web_download_failed">Download failed</string>
   <string name="web_select_file">Select file</string>
   <string name="web_exit_hint">Press back again to exit</string>
+  <string name="server_edit">Edit</string>
+  <string name="server_delete">Delete</string>
+  <string name="server_favorite">Favorite</string>
+  <string name="server_unfavorite">Unfavorite</string>
+  <string name="server_favorite_prefix">★ %1$s</string>
+  <string name="server_dialog_title">Choose server</string>
+  <string name="server_add_new">Add or manage servers</string>
 </resources>

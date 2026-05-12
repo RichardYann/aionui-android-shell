@@ -34,6 +34,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
 import ai.resopod.aionui.shell.R
 import ai.resopod.aionui.shell.data.AppPrefs
+import ai.resopod.aionui.shell.data.ServerEntry
 import ai.resopod.aionui.shell.ui.connect.ConnectActivity
 
 class WebActivity : AppCompatActivity() {
@@ -116,7 +117,7 @@ class WebActivity : AppCompatActivity() {
     }
     btnChangeServer.setOnClickListener {
       keepNavigationVisible()
-      goToConnect()
+      showServerSwitcher()
     }
     btnErrorChangeServer.setOnClickListener { goToConnect() }
     btnRetry.setOnClickListener {
@@ -385,6 +386,30 @@ class WebActivity : AppCompatActivity() {
   private fun goToConnect() {
     startActivity(Intent(this, ConnectActivity::class.java))
     finish()
+  }
+
+  private fun showServerSwitcher() {
+    val servers = prefs.getServers()
+    if (servers.isEmpty()) {
+      goToConnect()
+      return
+    }
+
+    val labels = servers.map { "${it.primaryLabel()}\n${it.url}" }.toTypedArray()
+    AlertDialog.Builder(this)
+      .setTitle(R.string.server_dialog_title)
+      .setItems(labels) { _, which ->
+        switchToServer(servers[which])
+      }
+      .setPositiveButton(R.string.server_add_new) { _, _ -> goToConnect() }
+      .setNegativeButton(android.R.string.cancel, null)
+      .show()
+  }
+
+  private fun switchToServer(server: ServerEntry) {
+    prefs.touchServer(server.id)
+    hideError()
+    webView.loadUrl(server.url)
   }
 
   private fun showMoreMenu() {
