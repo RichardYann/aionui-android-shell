@@ -9,6 +9,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.webkit.CookieManager
 import android.webkit.DownloadListener
 import android.webkit.URLUtil
@@ -19,6 +21,8 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.view.MotionEvent
+import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
@@ -32,6 +36,8 @@ import ai.resopod.aionui.shell.data.AppPrefs
 import ai.resopod.aionui.shell.ui.connect.ConnectActivity
 
 class WebActivity : AppCompatActivity() {
+  private lateinit var navBar: View
+  private lateinit var navRevealHandle: View
   private lateinit var webView: WebView
   private lateinit var errorOverlay: android.view.View
   private lateinit var errorMessage: TextView
@@ -39,6 +45,10 @@ class WebActivity : AppCompatActivity() {
 
   private var lastBackPressedAtMs: Long = 0
   private var filePathCallback: ValueCallback<Array<Uri>>? = null
+  private var navShown = false
+  private var navGestureStartY = 0f
+  private val navAutoHideHandler = Handler(Looper.getMainLooper())
+  private val navAutoHideRunnable = Runnable { hideNavigation() }
 
   private val filePickerLauncher =
     registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -72,6 +82,8 @@ class WebActivity : AppCompatActivity() {
       return
     }
 
+    navBar = findViewById(R.id.navBar)
+    navRevealHandle = findViewById(R.id.navRevealHandle)
     webView = findViewById(R.id.webView)
     errorOverlay = findViewById(R.id.errorOverlay)
     errorMessage = errorOverlay.findViewById(R.id.errorMessage)
@@ -85,22 +97,50 @@ class WebActivity : AppCompatActivity() {
     val btnErrorChangeServer = errorOverlay.findViewById<Button>(R.id.btnErrorChangeServer)
 
     btnBack.setOnClickListener {
+      keepNavigationVisible()
       if (webView.canGoBack()) webView.goBack() else finish()
     }
-    btnRefresh.setOnClickListener { webView.reload() }
-    btnChangeServer.setOnClickListener { goToConnect() }
+    btnRefresh.setOnClickListener {
+      keepNavigationVisible()
+      webView.reload()
+    }
+    btnChangeServer.setOnClickListener {
+      keepNavigationVisible()
+      goToConnect()
+    }
     btnErrorChangeServer.setOnClickListener { goToConnect() }
     btnRetry.setOnClickListener {
       hideError()
       webView.reload()
     }
-    btnMore.setOnClickListener { showMoreMenu() }
+    btnMore.setOnClickListener {
+      keepNavigationVisible()
+      showMoreMenu()
+    }
+
+    navRevealHandle.setOnTouchListener { _, event ->
+      when (event.actionMasked) {
+        MotionEvent.ACTION_DOWN -> {
+          navGestureStartY = event.y
+          true
+        }
+        MotionEvent.ACTION_MOVE -> {
+          if (!navShown && event.y - navGestureStartY > navRevealHandle.height * 1.5f) {
+            showNavigation()
+          }
+          true
+        }
+        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> true
+        else -> false
+      }
+    }
 
     configureWebView()
     webView.loadUrl(url)
   }
 
   override fun onDestroy() {
+    navAutoHideHandler.removeCallbacks(navAutoHideRunnable)
     filePathCallback?.onReceiveValue(null)
     filePathCallback = null
     if (::webView.isInitialized) {
@@ -159,6 +199,9 @@ class WebActivity : AppCompatActivity() {
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
           if (request.isForMainFrame) {
+            navAutoHideHandler.removeCallbacks(navAutoHideRunnable)
+            navBar.translationY = 0f
+            navShown = true
             showError(getString(R.string.web_failed_to_load, request.url.toString()))
           }
         }
@@ -227,6 +270,32 @@ class WebActivity : AppCompatActivity() {
 
   private fun hideError() {
     errorOverlay.visibility = android.view.View.GONE
+  }
+
+  private fun showNavigation() {
+    if (navShown) {
+      keepNavigationVisible()
+      return
+    }
+    navShown = true
+    navBar.animate().translationY(0f).setDuration(180).start()
+    scheduleNavigationHide()
+  }
+
+  private fun hideNavigation() {
+    if (!navShown || errorOverlay.visibility == View.VISIBLE) return
+    navShown = false
+    navBar.animate().translationY(-navBar.height.toFloat()).setDuration(180).start()
+  }
+
+  private fun keepNavigationVisible() {
+    if (!navShown) return
+    scheduleNavigationHide()
+  }
+
+  private fun scheduleNavigationHide() {
+    navAutoHideHandler.removeCallbacks(navAutoHideRunnable)
+    navAutoHideHandler.postDelayed(navAutoHideRunnable, 2500)
   }
 
   private fun goToConnect() {
