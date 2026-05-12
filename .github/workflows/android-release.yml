@@ -119,11 +119,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          SOURCE="android-shell/app/build/outputs/apk/release/app-release.apk"
-          if [ ! -f "$SOURCE" ]; then
-            echo "release APK not found at $SOURCE"
+          SOURCE=""
+          for candidate in \
+            "android-shell/app/build/outputs/apk/release/app-release.apk" \
+            "android-shell/app/build/outputs/apk/release/app-release-unsigned.apk"
+          do
+            if [ -f "$candidate" ]; then
+              SOURCE="$candidate"
+              break
+            fi
+          done
+
+          if [ -z "$SOURCE" ]; then
+            echo "release APK not found in expected release output locations"
+            find android-shell/app/build/outputs/apk -maxdepth 3 -type f -name "*.apk" -print || true
             exit 1
           fi
+
           cp "$SOURCE" "$RELEASE_FILE"
 
       - name: Upload release APK artifact
