@@ -85,6 +85,20 @@ jobs:
             android-shell/build-debug.exitcode
           if-no-files-found: warn
 
+      - name: Publish build log to repo
+        if: ${{ failure() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-debug
+          cp -f android-shell/build-debug.log ci-debug/build-debug.log
+          cp -f android-shell/build-debug.exitcode ci-debug/build-debug.exitcode
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ci-debug/build-debug.log ci-debug/build-debug.exitcode
+          git commit -m "ci: capture failed gradle log" || exit 0
+          git push
+
       - name: Upload debug APK
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
