@@ -36,6 +36,7 @@ import ai.resopod.aionui.shell.R
 import ai.resopod.aionui.shell.data.AppPrefs
 import ai.resopod.aionui.shell.data.ServerEntry
 import ai.resopod.aionui.shell.ui.connect.ConnectActivity
+import ai.resopod.aionui.shell.ui.connect.ConnectScreenMode
 
 class WebActivity : AppCompatActivity() {
   private lateinit var btnBack: ImageButton
@@ -77,6 +78,16 @@ class WebActivity : AppCompatActivity() {
         }
 
       cb.onReceiveValue(uris)
+    }
+
+  private val manageServerLauncher =
+    registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+      if (result.resultCode != RESULT_OK) return@registerForActivityResult
+      val nextUrl = prefs.getLastUrl().orEmpty()
+      if (nextUrl.isBlank()) return@registerForActivityResult
+
+      hideError()
+      webView.loadUrl(nextUrl)
     }
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -384,8 +395,11 @@ class WebActivity : AppCompatActivity() {
   }
 
   private fun goToConnect() {
-    startActivity(Intent(this, ConnectActivity::class.java))
-    finish()
+    val intent =
+      Intent(this, ConnectActivity::class.java).apply {
+        putExtra(ConnectActivity.EXTRA_LAUNCH_MODE, ConnectScreenMode.MANAGE.value)
+      }
+    manageServerLauncher.launch(intent)
   }
 
   private fun showServerSwitcher() {

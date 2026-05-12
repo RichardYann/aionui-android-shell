@@ -2,11 +2,19 @@
 <resources>
   <string name="app_name">AionUi Shell</string>
 
-  <string name="connect_title">Connect</string>
+  <string name="connect_back">Back</string>
+  <string name="connect_eyebrow">AionUi Workspace</string>
+  <string name="connect_title_entry">Connect to your server</string>
+  <string name="connect_title_manage">Switch or manage servers</string>
+  <string name="connect_subtitle_entry">Bring your workspace to Android with a fast, focused server setup.</string>
+  <string name="connect_subtitle_manage">Return to your current session any time, or jump to another saved server.</string>
+  <string name="connect_card_title">Quick connect</string>
+  <string name="connect_card_subtitle">Use a saved endpoint or add a new server below.</string>
   <string name="connect_name_hint">Server name (optional)</string>
   <string name="connect_url_hint">AionUi WebUI URL (http/https)</string>
   <string name="connect_button">Connect</string>
   <string name="connect_saved_servers">Saved servers</string>
+  <string name="connect_saved_servers_subtitle">Tap to connect. Long press to rename, favorite, or delete.</string>
   <string name="connect_saved_servers_empty">No saved servers yet. Add one above to start quickly next time.</string>
 
   <string name="web_change_server">Change server</string>
@@ -28,6 +36,8 @@
   <string name="server_delete">Delete</string>
   <string name="server_favorite">Favorite</string>
   <string name="server_unfavorite">Unfavorite</string>
+  <string name="server_badge_favorite">Favorite</string>
+  <string name="server_badge_recent">Recent</string>
   <string name="server_favorite_prefix">★ %1$s</string>
   <string name="server_dialog_title">Choose server</string>
   <string name="server_add_new">Add or manage servers</string>

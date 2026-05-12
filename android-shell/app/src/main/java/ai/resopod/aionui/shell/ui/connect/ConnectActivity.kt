@@ -4,12 +4,14 @@ import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.View
+import android.widget.ImageButton
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.content.res.AppCompatResources
 import ai.resopod.aionui.shell.R
 import ai.resopod.aionui.shell.data.AppPrefs
 import ai.resopod.aionui.shell.data.ServerEntry
@@ -18,6 +20,10 @@ import ai.resopod.aionui.shell.util.UrlUtil
 
 class ConnectActivity : AppCompatActivity() {
   private lateinit var prefs: AppPrefs
+  private lateinit var screenMode: ConnectScreenMode
+  private lateinit var backButton: ImageButton
+  private lateinit var connectTitle: TextView
+  private lateinit var connectSubtitle: TextView
   private lateinit var nameInput: EditText
   private lateinit var urlInput: EditText
   private lateinit var savedServersTitle: TextView
@@ -28,12 +34,17 @@ class ConnectActivity : AppCompatActivity() {
     setContentView(R.layout.activity_connect)
 
     prefs = AppPrefs(this)
+    screenMode = ConnectScreenMode.fromIntentValue(intent?.getStringExtra(EXTRA_LAUNCH_MODE))
+    backButton = findViewById(R.id.btnBackFromConnect)
+    connectTitle = findViewById(R.id.connectTitle)
+    connectSubtitle = findViewById(R.id.connectSubtitle)
     nameInput = findViewById(R.id.nameInput)
     urlInput = findViewById(R.id.urlInput)
     savedServersTitle = findViewById(R.id.savedServersTitle)
     serverListContainer = findViewById(R.id.serverListContainer)
     val connectButton = findViewById<Button>(R.id.connectButton)
 
+    configureHeader()
     prefs.getLastUrl()?.let(urlInput::setText)
     renderServerList()
 
@@ -42,27 +53,50 @@ class ConnectActivity : AppCompatActivity() {
     }
   }
 
+  override fun onBackPressed() {
+    if (screenMode.showsBackButton) {
+      finish()
+      return
+    }
+    super.onBackPressed()
+  }
+
   private fun connectToInput() {
     val normalized = UrlUtil.normalize(urlInput.text?.toString() ?: "")
     if (normalized.isBlank()) return
 
     prefs.upsertServer(nameInput.text?.toString().orEmpty(), normalized, markUsed = true)
-    startActivity(Intent(this, WebActivity::class.java))
+    if (screenMode == ConnectScreenMode.MANAGE) {
+      setResult(RESULT_OK)
+    } else {
+      startActivity(Intent(this, WebActivity::class.java))
+    }
     finish()
+  }
+
+  private fun configureHeader() {
+    backButton.visibility = if (screenMode.showsBackButton) View.VISIBLE else View.GONE
+    backButton.setOnClickListener { finish() }
+    connectTitle.text =
+      if (screenMode == ConnectScreenMode.MANAGE) {
+        getString(R.string.connect_title_manage)
+      } else {
+        getString(R.string.connect_title_entry)
+      }
+    connectSubtitle.text =
+      if (screenMode == ConnectScreenMode.MANAGE) {
+        getString(R.string.connect_subtitle_manage)
+      } else {
+        getString(R.string.connect_subtitle_entry)
+      }
   }
 
   private fun renderServerList() {
     serverListContainer.removeAllViews()
     val servers = prefs.getServers()
-    savedServersTitle.visibility = if (servers.isEmpty()) View.GONE else View.VISIBLE
-
     if (servers.isEmpty()) {
-      serverListContainer.addView(
-        TextView(this).apply {
-          text = getString(R.string.connect_saved_servers_empty)
-          alpha = 0.72f
-        },
-      )
+      savedServersTitle.visibility = View.VISIBLE
+      serverListContainer.addView(createEmptyStateView())
       return
     }
 
@@ -70,8 +104,8 @@ class ConnectActivity : AppCompatActivity() {
       val row =
         LinearLayout(this).apply {
           orientation = LinearLayout.VERTICAL
-          setPadding(24, 20, 24, 20)
-          background = getDrawable(android.R.drawable.dialog_holo_light_frame)
+          background = AppCompatResources.getDrawable(this@ConnectActivity, R.drawable.server_card_background)
+          setPadding(28, 24, 28, 24)
           setOnClickListener { connectToServer(server) }
           setOnLongClickListener {
             showServerActions(server)
@@ -79,25 +113,79 @@ class ConnectActivity : AppCompatActivity() {
           }
         }
 
+      val titleRow =
+        LinearLayout(this).apply {
+          orientation = LinearLayout.HORIZONTAL
+        }
+
       val title =
         TextView(this).apply {
-          text =
-            if (server.isFavorite) {
-              getString(R.string.server_favorite_prefix, server.primaryLabel())
-            } else {
-              server.primaryLabel()
-            }
+          text = server.primaryLabel()
+          layoutParams =
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
           textSize = 16f
+          setTextColor(0xFFFFFFFF.toInt())
           setTypeface(typeface, Typeface.BOLD)
+        }
+
+      val favoriteBadge =
+        TextView(this).apply {
+          background = AppCompatResources.getDrawable(this@ConnectActivity, R.drawable.server_badge_favorite)
+          text = getString(R.string.server_badge_favorite)
+          setTextColor(0xFF04111A.toInt())
+          textSize = 11f
+          setTypeface(typeface, Typeface.BOLD)
+          setPadding(18, 8, 18, 8)
+          visibility = if (server.isFavorite) View.VISIBLE else View.GONE
         }
 
       val subtitle =
         TextView(this).apply {
           text = server.url
+          alpha = 0.8f
+          setTextColor(0xFFB7D2E8.toInt())
+          textSize = 13f
         }
 
-      row.addView(title)
-      row.addView(subtitle)
+      val statusRow =
+        LinearLayout(this).apply {
+          orientation = LinearLayout.HORIZONTAL
+          visibility = if (server.url == prefs.getLastUrl()) View.VISIBLE else View.GONE
+        }
+
+      val recentBadge =
+        TextView(this).apply {
+          background = AppCompatResources.getDrawable(this@ConnectActivity, R.drawable.server_badge_recent)
+          text = getString(R.string.server_badge_recent)
+          setTextColor(0xFF04111A.toInt())
+          textSize = 11f
+          setTypeface(typeface, Typeface.BOLD)
+          setPadding(18, 8, 18, 8)
+        }
+
+      titleRow.addView(title)
+      titleRow.addView(favoriteBadge)
+      statusRow.addView(recentBadge)
+
+      row.addView(titleRow)
+      row.addView(
+        subtitle,
+        LinearLayout.LayoutParams(
+          LinearLayout.LayoutParams.MATCH_PARENT,
+          LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply {
+          topMargin = 8
+        },
+      )
+      row.addView(
+        statusRow,
+        LinearLayout.LayoutParams(
+          LinearLayout.LayoutParams.WRAP_CONTENT,
+          LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply {
+          topMargin = 14
+        },
+      )
 
       val params =
         LinearLayout.LayoutParams(
@@ -110,9 +198,22 @@ class ConnectActivity : AppCompatActivity() {
     }
   }
 
+  private fun createEmptyStateView(): TextView =
+    TextView(this).apply {
+      background = AppCompatResources.getDrawable(this@ConnectActivity, R.drawable.server_card_background)
+      text = getString(R.string.connect_saved_servers_empty)
+      setPadding(28, 24, 28, 24)
+      setTextColor(0xFFB7D2E8.toInt())
+      textSize = 14f
+    }
+
   private fun connectToServer(server: ServerEntry) {
     prefs.touchServer(server.id)
-    startActivity(Intent(this, WebActivity::class.java))
+    if (screenMode == ConnectScreenMode.MANAGE) {
+      setResult(RESULT_OK)
+    } else {
+      startActivity(Intent(this, WebActivity::class.java))
+    }
     finish()
   }
 
@@ -183,5 +284,9 @@ class ConnectActivity : AppCompatActivity() {
       }
       .setNegativeButton(android.R.string.cancel, null)
       .show()
+  }
+
+  companion object {
+    const val EXTRA_LAUNCH_MODE = "launch_mode"
   }
 }
