@@ -103,11 +103,12 @@ class WebActivity : AppCompatActivity() {
   override fun onDestroy() {
     filePathCallback?.onReceiveValue(null)
     filePathCallback = null
-    webView.apply {
-      stopLoading()
-      webChromeClient = null
-      webViewClient = null
-      destroy()
+    if (::webView.isInitialized) {
+      webView.apply {
+        stopLoading()
+        webChromeClient = null
+        destroy()
+      }
     }
     super.onDestroy()
   }
