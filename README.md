@@ -38,12 +38,8 @@ Bring your self-hosted AionUi experience to Android with a focused WebView shell
 - Thanks to Trae SOLO for completing this project end-to-end
 - 感谢 AionUi 项目提供产品方向与生态基础
 - 感谢 Trae SOLO 完整完成了本项目
-- This project was completed entirely by Trae SOLO
-- 本项目完全由 Trae SOLO 完成
 
 ## 📄 License
 
 - Released under the MIT License
 - 本项目采用 MIT License 开源
-- See `LICENSE` for details
-- 许可详情见仓库根目录 `LICENSE`
