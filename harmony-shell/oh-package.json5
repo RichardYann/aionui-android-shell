@@ -1,4 +1,5 @@
 {
+  "modelVersion": "5.0.0",
   "name": "aionui-harmony-shell",
   "version": "0.1.0",
   "description": "AionUi HarmonyOS shell",
@@ -6,5 +7,6 @@
   "author": "AionUi",
   "license": "MIT",
   "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {},
+  "dynamicDependencies": {}
 }
