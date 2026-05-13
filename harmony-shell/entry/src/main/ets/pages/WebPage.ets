@@ -9,6 +9,7 @@ import { createWebUiState } from '../common/webUiState'
 import { buildNotificationShim } from '../common/webBridge'
 import type { ServerEntry } from '../common/serverModel'
 
+@Entry
 @Component
 struct WebPage {
   @State private currentUrl: string = ''
