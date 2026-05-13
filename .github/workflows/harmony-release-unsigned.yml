@@ -66,6 +66,17 @@ jobs:
           if [[ -d "${tool_root}/tool/node/bin" ]]; then
             echo "${tool_root}/tool/node/bin" >> "${GITHUB_PATH}"
           fi
+          node_modules_paths=()
+          if [[ -d "${tool_root}/tool/node_modules" ]]; then
+            node_modules_paths+=("${tool_root}/tool/node_modules")
+          fi
+          if [[ -d "${tool_root}/node_modules" ]]; then
+            node_modules_paths+=("${tool_root}/node_modules")
+          fi
+          if [[ ${#node_modules_paths[@]} -gt 0 ]]; then
+            node_path="$(IFS=:; echo "${node_modules_paths[*]}")"
+            echo "NODE_PATH=${node_path}" >> "${GITHUB_ENV}"
+          fi
 
       - name: Configure registries
         shell: bash
@@ -90,12 +101,12 @@ jobs:
           cd "${PROJECT_PATH}/entry"
           ohpm install --all
 
-      - name: Install hvigor build deps
+      - name: Inspect CLI runtime packages
         shell: bash
         run: |
           set -euo pipefail
-          cd "${PROJECT_PATH}"
-          npm install --no-save @ohos/hvigor@6.21.1 @ohos/hvigor-ohos-plugin@6.21.1
+          tool_root="${GITHUB_WORKSPACE}/${COMMANDLINE_TOOL_DIR}/command-line-tools"
+          find "${tool_root}" -maxdepth 4 \( -path '*/@ohos/hvigor' -o -path '*/@ohos/hvigor-ohos-plugin' \) -type d | sort || true
 
       - name: Normalize hvigorw
         shell: bash
@@ -113,6 +124,8 @@ jobs:
           cd "${PROJECT_PATH}"
           cli_root="${GITHUB_WORKSPACE}/${COMMANDLINE_TOOL_DIR}"
           COMMANDLINE_TOOL_DIR="${cli_root}" bash -x ./hvigorw -v || true
+          node -p "require.resolve('@ohos/hvigor-ohos-plugin/package.json')"
+          node -p "require.resolve('@ohos/hvigor/package.json')"
 
       - name: Clean Harmony project
         shell: bash
