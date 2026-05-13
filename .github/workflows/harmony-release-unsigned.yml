@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CLI_URL: "http://kodo-sgp.aitogo.work/commandline-tools-linux-x64-6.0.1.251.zip"
-      COMMANDLINE_TOOL_DIR: ${{ runner.temp }}/harmony-cli
+      COMMANDLINE_TOOL_DIR: .harmony-cli
       PROJECT_PATH: harmony-shell
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
           fi
           rm -rf "${COMMANDLINE_TOOL_DIR}"
           mkdir -p "${COMMANDLINE_TOOL_DIR}"
-          archive_path="${RUNNER_TEMP}/commandline-tools.zip"
+          archive_path="${GITHUB_WORKSPACE}/commandline-tools.zip"
           curl -fL "${CLI_URL}" -o "${archive_path}"
           unzip -q "${archive_path}" -d "${COMMANDLINE_TOOL_DIR}"
           if [[ ! -d "${COMMANDLINE_TOOL_DIR}/command-line-tools" ]]; then
