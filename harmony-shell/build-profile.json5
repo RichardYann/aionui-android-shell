@@ -6,12 +6,21 @@
         "compatibleSdkVersion": "6.0.1(21)",
         "runtimeOS": "HarmonyOS"
       }
-    ]
+    ],
+    "signingConfigs": []
   },
   "modules": [
     {
       "name": "entry",
-      "srcPath": "./entry"
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
     }
   ]
 }
