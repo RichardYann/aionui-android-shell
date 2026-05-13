@@ -97,13 +97,27 @@ jobs:
           cd "${PROJECT_PATH}"
           npm install --no-save @ohos/hvigor@6.23.5 @ohos/hvigor-ohos-plugin@6.23.5
 
+      - name: Normalize hvigorw
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${PROJECT_PATH}"
+          sed -i 's/\r$//' ./hvigorw
+          chmod +x ./hvigorw
+
+      - name: Clean Harmony project
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${PROJECT_PATH}"
+          bash ./hvigorw -p product=default clean --no-daemon
+
       - name: Build release HAP (unsigned)
         shell: bash
         run: |
           set -euo pipefail
           cd "${PROJECT_PATH}"
-          hvigorw clean --no-daemon
-          hvigorw assembleHap --mode module -p product=default -p buildMode=release --no-daemon
+          bash ./hvigorw --mode module -p product=default -p module=entry@default -p buildMode=release assembleHap --no-daemon
 
       - name: Upload HAP artifacts
         uses: actions/upload-artifact@v4
