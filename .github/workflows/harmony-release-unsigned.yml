@@ -111,21 +111,24 @@ jobs:
         run: |
           set -euo pipefail
           cd "${PROJECT_PATH}"
-          bash -x ./hvigorw -v || true
+          cli_root="${GITHUB_WORKSPACE}/${COMMANDLINE_TOOL_DIR}"
+          COMMANDLINE_TOOL_DIR="${cli_root}" bash -x ./hvigorw -v || true
 
       - name: Clean Harmony project
         shell: bash
         run: |
           set -euo pipefail
           cd "${PROJECT_PATH}"
-          bash -x ./hvigorw -p product=default clean --no-daemon
+          cli_root="${GITHUB_WORKSPACE}/${COMMANDLINE_TOOL_DIR}"
+          COMMANDLINE_TOOL_DIR="${cli_root}" bash -x ./hvigorw -p product=default clean --no-daemon
 
       - name: Build release HAP (unsigned)
         shell: bash
         run: |
           set -euo pipefail
           cd "${PROJECT_PATH}"
-          bash -x ./hvigorw --mode module -p product=default -p module=entry@default -p buildMode=release assembleHap --no-daemon
+          cli_root="${GITHUB_WORKSPACE}/${COMMANDLINE_TOOL_DIR}"
+          COMMANDLINE_TOOL_DIR="${cli_root}" bash -x ./hvigorw --mode module -p product=default -p module=entry@default -p buildMode=release assembleHap --no-daemon
 
       - name: Upload HAP artifacts
         uses: actions/upload-artifact@v4
