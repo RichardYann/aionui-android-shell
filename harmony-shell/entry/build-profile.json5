@@ -1,7 +1,10 @@
 {
+  "apiType": "stageMode",
+  "buildOption": {},
   "targets": [
     {
-      "name": "default"
+      "name": "default",
+      "runtimeOS": "HarmonyOS"
     }
   ]
 }
