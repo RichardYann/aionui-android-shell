@@ -6,5 +6,8 @@
   "author": "AionUi",
   "license": "MIT",
   "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "@ohos/hvigor": "6.23.5",
+    "@ohos/hvigor-ohos-plugin": "6.23.5"
+  }
 }
