@@ -102,8 +102,8 @@ jobs:
         run: |
           set -euo pipefail
           cd "${PROJECT_PATH}"
-          hvigorw clean --no-daemon
-          hvigorw assembleHap --mode module -p product=default -p buildMode=release --no-daemon
+          bash ./hvigorw clean --no-daemon
+          bash ./hvigorw assembleHap --mode module -p product=default -p buildMode=release --no-daemon
 
       - name: Upload HAP artifacts
         uses: actions/upload-artifact@v4
