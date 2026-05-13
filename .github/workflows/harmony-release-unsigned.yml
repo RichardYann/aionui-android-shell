@@ -106,7 +106,7 @@ jobs:
         run: |
           set -euo pipefail
           tool_root="${GITHUB_WORKSPACE}/${COMMANDLINE_TOOL_DIR}/command-line-tools"
-          find "${tool_root}" -maxdepth 4 \( -path '*/@ohos/hvigor' -o -path '*/@ohos/hvigor-ohos-plugin' \) -type d | sort || true
+          find "${tool_root}" \( -path '*/@ohos/hvigor' -o -path '*/@ohos/hvigor-ohos-plugin' \) -type d | sort || true
 
       - name: Normalize hvigorw
         shell: bash
@@ -124,8 +124,8 @@ jobs:
           cd "${PROJECT_PATH}"
           cli_root="${GITHUB_WORKSPACE}/${COMMANDLINE_TOOL_DIR}"
           COMMANDLINE_TOOL_DIR="${cli_root}" bash -x ./hvigorw -v || true
-          node -p "require.resolve('@ohos/hvigor-ohos-plugin/package.json')"
-          node -p "require.resolve('@ohos/hvigor/package.json')"
+          echo "NODE_PATH=${NODE_PATH:-<unset>}"
+          find . -maxdepth 3 \( -name node_modules -o -name oh_modules \) -type d | sort || true
 
       - name: Clean Harmony project
         shell: bash
