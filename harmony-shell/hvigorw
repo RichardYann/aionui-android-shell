@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ -n "${COMMANDLINE_TOOL_DIR:-}" && -x "${COMMANDLINE_TOOL_DIR}/command-line-tools/bin/hvigorw" ]]; then
+  "${COMMANDLINE_TOOL_DIR}/command-line-tools/bin/hvigorw" "$@"
+  exit 0
+fi
+
+if [[ -n "${HARMONY_CLI_DIR:-}" && -x "${HARMONY_CLI_DIR}/command-line-tools/bin/hvigorw" ]]; then
+  "${HARMONY_CLI_DIR}/command-line-tools/bin/hvigorw" "$@"
+  exit 0
+fi
+
+node "$(cd "$(dirname "$0")" && pwd)/hvigor-wrapper.js" "$@"

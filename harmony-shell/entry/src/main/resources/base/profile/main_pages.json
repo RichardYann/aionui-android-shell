@@ -1,0 +1,6 @@
+﻿{
+  "src": [
+    "pages/ConnectPage",
+    "pages/WebPage"
+  ]
+}

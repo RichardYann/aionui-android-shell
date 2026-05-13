@@ -1,0 +1,16 @@
+{
+  "string": [
+    { "name": "app_name", "value": "AionUi Shell" },
+    { "name": "module_desc", "value": "AionUi HarmonyOS shell" },
+    { "name": "connect_title", "value": "连接服务器" },
+    { "name": "connect_hint", "value": "输入 AionUi WebUI 地址" },
+    { "name": "connect_action", "value": "连接并保存" },
+    { "name": "connect_recent", "value": "已保存服务器" },
+    { "name": "web_loading", "value": "正在加载..." },
+    { "name": "web_retry", "value": "重试" },
+    { "name": "web_switch_server", "value": "切换服务器" },
+    { "name": "web_back", "value": "返回" },
+    { "name": "web_refresh", "value": "刷新" },
+    { "name": "web_error", "value": "页面加载失败" }
+  ]
+}

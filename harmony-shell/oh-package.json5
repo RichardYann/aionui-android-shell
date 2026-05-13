@@ -1,0 +1,10 @@
+{
+  "name": "aionui-harmony-shell",
+  "version": "0.1.0",
+  "description": "AionUi HarmonyOS shell",
+  "main": "",
+  "author": "AionUi",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}

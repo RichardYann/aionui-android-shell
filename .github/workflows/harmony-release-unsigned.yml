@@ -1,0 +1,110 @@
+name: harmony-release-unsigned
+
+on:
+  workflow_dispatch:
+    inputs:
+      cli_url:
+        description: "direct download URL for HarmonyOS command line tools zip"
+        required: false
+  push:
+    paths:
+      - harmony-shell/**
+      - .github/workflows/harmony-release-unsigned.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CLI_URL: ${{ inputs.cli_url || vars.HARMONY_CLI_URL || 'http://kodo-sgp.aitogo.work/commandline-tools-linux-x64-6.0.1.251.zip' }}
+      COMMANDLINE_TOOL_DIR: ${{ runner.temp }}/harmony-cli
+      PROJECT_PATH: harmony-shell
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache command line tools
+        id: cache_cli
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.COMMANDLINE_TOOL_DIR }}
+          key: harmony-cli-${{ runner.os }}-${{ env.CLI_URL }}
+
+      - name: Download command line tools
+        if: steps.cache_cli.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLI_URL}" ]]; then
+            echo "Missing CLI_URL. Set repository variable HARMONY_CLI_URL or provide workflow_dispatch input cli_url."
+            exit 2
+          fi
+          rm -rf "${COMMANDLINE_TOOL_DIR}"
+          mkdir -p "${COMMANDLINE_TOOL_DIR}"
+          archive_path="${RUNNER_TEMP}/commandline-tools.zip"
+          curl -fL "${CLI_URL}" -o "${archive_path}"
+          unzip -q "${archive_path}" -d "${COMMANDLINE_TOOL_DIR}"
+          if [[ ! -d "${COMMANDLINE_TOOL_DIR}/command-line-tools" ]]; then
+            found="$(find "${COMMANDLINE_TOOL_DIR}" -maxdepth 3 -type d -name command-line-tools -print -quit || true)"
+            if [[ -z "${found}" ]]; then
+              echo "command-line-tools directory not found after unzip"
+              exit 3
+            fi
+            root="$(dirname "${found}")"
+            rm -rf "${COMMANDLINE_TOOL_DIR}"
+            mv "${root}" "${COMMANDLINE_TOOL_DIR}"
+          fi
+
+      - name: Setup PATH
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "${COMMANDLINE_TOOL_DIR}/command-line-tools/bin" >> "${GITHUB_PATH}"
+          if [[ -d "${COMMANDLINE_TOOL_DIR}/command-line-tools/tool/node/bin" ]]; then
+            echo "${COMMANDLINE_TOOL_DIR}/command-line-tools/tool/node/bin" >> "${GITHUB_PATH}"
+          fi
+
+      - name: Configure registries
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm config set registry https://repo.huaweicloud.com/repository/npm/
+          npm config set "@ohos:registry" https://repo.harmonyos.com/npm/
+          ohpm config set registry https://ohpm.openharmony.cn/ohpm/
+          ohpm config set strict_ssl false
+
+      - name: Install deps (project)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${PROJECT_PATH}"
+          ohpm install --all
+
+      - name: Install deps (module)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${PROJECT_PATH}/entry"
+          ohpm install --all
+
+      - name: Build release HAP (unsigned)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${PROJECT_PATH}"
+          hvigorw clean --no-daemon
+          hvigorw assembleHap --mode module -p product=default -p buildMode=release --no-daemon
+
+      - name: Upload HAP artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: harmony-hap-release-unsigned
+          path: |
+            harmony-shell/**/build/**/outputs/**/*.hap
+          if-no-files-found: error
