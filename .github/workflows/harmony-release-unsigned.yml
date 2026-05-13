@@ -95,7 +95,7 @@ jobs:
         run: |
           set -euo pipefail
           cd "${PROJECT_PATH}"
-          npm install --no-save @ohos/hvigor@6.23.5 @ohos/hvigor-ohos-plugin@6.23.5
+          npm install --no-save @ohos/hvigor@6.21.1 @ohos/hvigor-ohos-plugin@6.21.1
 
       - name: Normalize hvigorw
         shell: bash
