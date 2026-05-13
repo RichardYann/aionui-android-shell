@@ -2,10 +2,6 @@ name: harmony-release-unsigned
 
 on:
   workflow_dispatch:
-    inputs:
-      cli_url:
-        description: "direct download URL for HarmonyOS command line tools zip"
-        required: false
   push:
     paths:
       - harmony-shell/**
@@ -18,7 +14,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      CLI_URL: ${{ inputs.cli_url || vars.HARMONY_CLI_URL || 'http://kodo-sgp.aitogo.work/commandline-tools-linux-x64-6.0.1.251.zip' }}
+      CLI_URL: "http://kodo-sgp.aitogo.work/commandline-tools-linux-x64-6.0.1.251.zip"
       COMMANDLINE_TOOL_DIR: ${{ runner.temp }}/harmony-cli
       PROJECT_PATH: harmony-shell
     steps:
@@ -42,7 +38,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "${CLI_URL}" ]]; then
-            echo "Missing CLI_URL. Set repository variable HARMONY_CLI_URL or provide workflow_dispatch input cli_url."
+            echo "Missing CLI_URL."
             exit 2
           fi
           rm -rf "${COMMANDLINE_TOOL_DIR}"
