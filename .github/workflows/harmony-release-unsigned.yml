@@ -61,9 +61,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "${COMMANDLINE_TOOL_DIR}/command-line-tools/bin" >> "${GITHUB_PATH}"
-          if [[ -d "${COMMANDLINE_TOOL_DIR}/command-line-tools/tool/node/bin" ]]; then
-            echo "${COMMANDLINE_TOOL_DIR}/command-line-tools/tool/node/bin" >> "${GITHUB_PATH}"
+          tool_root="${GITHUB_WORKSPACE}/${COMMANDLINE_TOOL_DIR}/command-line-tools"
+          echo "${tool_root}/bin" >> "${GITHUB_PATH}"
+          if [[ -d "${tool_root}/tool/node/bin" ]]; then
+            echo "${tool_root}/tool/node/bin" >> "${GITHUB_PATH}"
           fi
 
       - name: Configure registries
