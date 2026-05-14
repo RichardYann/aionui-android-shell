@@ -230,7 +230,7 @@ struct WebPage {
             this.openExternalUrl(url)
             return true
           })
-          .onDownloadStart((_event: web_webview.OnDownloadStartEvent) => {
+          .onDownloadStart((_event) => {
             const sanitizedUrl = this.currentUrl.split('?')[0]
             const segments = sanitizedUrl.split('/')
             const lastSegment = segments.length > 0 ? segments[segments.length - 1] : ''
