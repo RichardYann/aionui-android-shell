@@ -1,5 +1,5 @@
 import { promptAction, router } from '@kit.ArkUI'
-import { common } from '@kit.AbilityKit'
+import { common, Want } from '@kit.AbilityKit'
 import web_webview from '@ohos.web.webview'
 import { DownloadBridge } from '../common/downloadBridge'
 import { NotificationBridge, NotificationProxy } from '../common/notificationBridge'
@@ -101,9 +101,9 @@ struct WebPage {
   private async openExternalUrl(url: string): Promise<void> {
     try {
       const context = getContext(this) as common.UIAbilityContext
-      const want = {
+      const want: Want = {
         uri: url
-      } as common.Want
+      }
       await context.startAbility(want)
     } catch (_error) {
       promptAction.showToast({ message: `无法打开该链接：${url}` })
@@ -204,7 +204,8 @@ struct WebPage {
           .javaScriptProxy({
             object: this.notificationProxy,
             name: 'AionUiHarmonyBridge',
-            methodList: ['requestNotificationPermission']
+            methodList: ['requestNotificationPermission'],
+            controller: this.controller
           })
           .onPageBegin((_event) => {
             this.pageLoading = true
@@ -229,9 +230,12 @@ struct WebPage {
             this.openExternalUrl(url)
             return true
           })
-          .onDownloadStart((url, _userAgent, contentDisposition, mimeType, contentLength) => {
-            const fileName = contentDisposition || `download-${contentLength || 0}.${mimeType || 'bin'}`
-            this.downloadBridge.startDownload(url, fileName)
+          .onDownloadStart((_event: web_webview.OnDownloadStartEvent) => {
+            const sanitizedUrl = this.currentUrl.split('?')[0]
+            const segments = sanitizedUrl.split('/')
+            const lastSegment = segments.length > 0 ? segments[segments.length - 1] : ''
+            const fileName = lastSegment ? lastSegment : 'download.bin'
+            this.downloadBridge.startDownload(this.currentUrl, fileName)
           })
       }
       .width('100%')
