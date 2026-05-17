@@ -20,8 +20,10 @@ struct ConnectPage {
     this.storage = new ShellStorage(context)
     this.servers = await this.storage.getServers()
     const lastUrl = await this.storage.getLastUrl()
+    const params = router.getParams() as Record<string, string>
+    const skipAutoOpen = params && params.skipAutoOpen === '1'
     this.loading = false
-    if (lastUrl) {
+    if (lastUrl && !skipAutoOpen) {
       router.replaceUrl({ url: 'pages/WebPage', params: { initialUrl: lastUrl } })
     }
   }

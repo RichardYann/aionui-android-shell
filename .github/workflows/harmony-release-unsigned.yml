@@ -143,10 +143,20 @@ jobs:
           cli_root="${GITHUB_WORKSPACE}/${COMMANDLINE_TOOL_DIR}"
           COMMANDLINE_TOOL_DIR="${cli_root}" bash -x ./hvigorw --mode module -p product=default -p module=entry@default -p buildMode=release assembleHap --no-daemon --stacktrace
 
+      - name: Collect unsigned HAP
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact_dir="${GITHUB_WORKSPACE}/harmony-artifacts"
+          rm -rf "${artifact_dir}"
+          mkdir -p "${artifact_dir}"
+          find harmony-shell -path '*/build/*/outputs/*' -name '*.hap' -type f -exec cp {} "${artifact_dir}/" \;
+          ls -la "${artifact_dir}"
+          test -n "$(find "${artifact_dir}" -maxdepth 1 -name '*.hap' -type f -print -quit)"
+
       - name: Upload HAP artifacts
         uses: actions/upload-artifact@v4
         with:
           name: harmony-hap-release-unsigned
-          path: |
-            harmony-shell/**/build/**/outputs/**/*.hap
+          path: harmony-artifacts/*.hap
           if-no-files-found: error

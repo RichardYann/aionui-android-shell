@@ -76,6 +76,23 @@ struct WebPage {
     this.errorMessage = ''
   }
 
+  private navigateToConnectPage(): void {
+    this.switcherVisible = false
+    this.pageLoading = false
+    this.navVisible = true
+    this.clearError()
+    router.replaceUrl({ url: 'pages/ConnectPage', params: { skipAutoOpen: '1' } })
+  }
+
+  private stopLoadingAndExit(): void {
+    try {
+      this.controller.stop()
+    } catch (_error) {
+      console.warn('Failed to stop current page load before leaving.')
+    }
+    this.navigateToConnectPage()
+  }
+
   private async refreshServers(): Promise<void> {
     if (!this.storage) {
       return
@@ -121,13 +138,35 @@ struct WebPage {
     console.info('ArkWeb file chooser integration point is ready.')
   }
 
-  private handleGoBack(): void {
-    try {
-      this.controller.backward()
+  private handleBackAction(): boolean {
+    if (this.switcherVisible) {
+      this.switcherVisible = false
       this.revealNav()
-    } catch (_error) {
-      router.replaceUrl({ url: 'pages/ConnectPage' })
+      return true
     }
+    if (this.errorVisible) {
+      this.navigateToConnectPage()
+      return true
+    }
+    if (this.pageLoading) {
+      this.stopLoadingAndExit()
+      return true
+    }
+    try {
+      if (this.controller.accessBackward()) {
+        this.controller.backward()
+        this.revealNav()
+        return true
+      }
+    } catch (_error) {
+      console.warn('Failed to navigate backward in web history.')
+    }
+    this.navigateToConnectPage()
+    return true
+  }
+
+  onBackPress(): boolean {
+    return this.handleBackAction()
   }
 
   @Builder
@@ -155,7 +194,7 @@ struct WebPage {
 
       Button('管理服务器')
         .width('100%')
-        .onClick(() => router.replaceUrl({ url: 'pages/ConnectPage' }))
+        .onClick(() => this.navigateToConnectPage())
     }
     .width('100%')
     .padding(20)
@@ -169,7 +208,7 @@ struct WebPage {
         if (this.navVisible) {
           Column({ space: 0 }) {
             Row({ space: 10 }) {
-              Button($r('app.string.web_back')).onClick(() => this.handleGoBack())
+              Button($r('app.string.web_back')).onClick(() => this.handleBackAction())
               Button($r('app.string.web_refresh')).onClick(() => {
                 this.clearError()
                 this.pageLoading = true
