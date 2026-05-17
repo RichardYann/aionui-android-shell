@@ -1,6 +1,7 @@
 import { promptAction, router } from '@kit.ArkUI'
 import { common, Want } from '@kit.AbilityKit'
-import web_webview from '@ohos.web.webview'
+import { webview } from '@kit.ArkWeb'
+import http from '@ohos.net.http'
 import { DownloadBridge } from '../common/downloadBridge'
 import { NotificationBridge, NotificationProxy } from '../common/notificationBridge'
 import { ShellStorage } from '../common/storage'
@@ -20,7 +21,7 @@ struct WebPage {
   @State private switcherVisible: boolean = false
   @State private servers: ServerEntry[] = []
 
-  private controller: web_webview.WebviewController = new web_webview.WebviewController()
+  private controller: webview.WebviewController = new webview.WebviewController()
   private notificationBridge: NotificationBridge = new NotificationBridge()
   private notificationProxy: NotificationProxy = new NotificationProxy(this.notificationBridge)
   private downloadBridge: DownloadBridge = new DownloadBridge()
@@ -91,6 +92,57 @@ struct WebPage {
       console.warn('Failed to stop current page load before leaving.')
     }
     this.navigateToConnectPage()
+  }
+
+  private async probeInternet(): Promise<void> {
+    try {
+      const client = http.createHttp()
+      const response = await client.request('https://www.baidu.com/', {
+        method: http.RequestMethod.GET,
+        connectTimeout: 8000,
+        readTimeout: 8000
+      })
+      const code = response && typeof response.responseCode === 'number' ? response.responseCode : -1
+      await client.destroy()
+      promptAction.showToast({ message: `网络自检：${code}` })
+    } catch (error) {
+      const message = error ? `${error}` : 'unknown'
+      promptAction.showToast({ message: `网络自检失败：${message}` })
+    }
+  }
+
+  private formatWebError(event: object | undefined): string {
+    const unknown = this.currentUrl ? this.currentUrl : '<unknown>'
+    const payload = event as Record<string, object> | undefined
+    const request = payload && payload.request ? (payload.request as Record<string, Function>) : undefined
+    const failedUrl = request && typeof request.getRequestUrl === 'function'
+      ? `${request.getRequestUrl()}`
+      : unknown
+
+    const error = payload && payload.error ? (payload.error as Record<string, Function>) : undefined
+    let code = ''
+    let desc = ''
+    if (error) {
+      try {
+        if (typeof error.getErrorCode === 'function') {
+          code = `${error.getErrorCode()}`
+        }
+      } catch (_err) {
+        code = ''
+      }
+      try {
+        if (typeof error.getErrorInfo === 'function') {
+          desc = `${error.getErrorInfo()}`
+        } else if (typeof error.getErrorDescription === 'function') {
+          desc = `${error.getErrorDescription()}`
+        }
+      } catch (_err) {
+        desc = ''
+      }
+    }
+
+    const meta = [code ? `code=${code}` : '', desc ? `desc=${desc}` : ''].filter((item) => item.length > 0).join(', ')
+    return meta ? `页面加载失败：${failedUrl}（${meta}）` : `页面加载失败：${failedUrl}`
   }
 
   private async refreshServers(): Promise<void> {
@@ -215,6 +267,9 @@ struct WebPage {
                 this.controller.refresh()
                 this.revealNav()
               })
+              Button('网络自检').onClick(() => {
+                this.probeInternet()
+              })
               Button($r('app.string.web_switch_server')).onClick(async () => {
                 await this.refreshServers()
                 this.switcherVisible = true
@@ -277,7 +332,7 @@ struct WebPage {
                 console.warn(`Ignore subresource load failure: ${failedUrl}`)
                 return
               }
-              this.showError(`页面加载失败：${failedUrl}`)
+              this.showError(this.formatWebError(event))
             })
             .onLoadIntercept((event) => {
               const url = event && event.data ? event.data.getRequestUrl() : ''
