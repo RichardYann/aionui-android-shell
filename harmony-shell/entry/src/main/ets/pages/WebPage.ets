@@ -178,12 +178,14 @@ struct WebPage {
             .width('100%')
             .padding({ left: 12, right: 12, top: 10, bottom: 10 })
             .backgroundColor('#111827')
+            .zIndex(10)
 
             if (this.pageLoading) {
               Progress({ value: 50, total: 100, type: ProgressType.Linear })
                 .width('100%')
                 .height(2)
                 .color('#60A5FA')
+                .zIndex(10)
             }
           }
         } else {
@@ -201,6 +203,10 @@ struct WebPage {
           .layoutWeight(1)
           .javaScriptAccess(true)
           .domStorageAccess(true)
+          .fileAccess(true)
+          .imageAccess(true)
+          .onlineImageAccess(true)
+          .mixedMode(MixedMode.All)
           .javaScriptProxy({
             object: this.notificationProxy,
             name: 'AionUiHarmonyBridge',
@@ -251,6 +257,7 @@ struct WebPage {
         .backgroundColor('#CC0F172A')
         .borderRadius(18)
         .margin({ top: 160 })
+        .zIndex(20)
       }
 
       if (this.errorVisible) {
@@ -272,6 +279,7 @@ struct WebPage {
         .width('100%')
         .backgroundColor('#F8FAFC')
         .borderRadius(16)
+        .zIndex(30)
       }
 
       if (this.switcherVisible) {
@@ -282,6 +290,7 @@ struct WebPage {
         .width('100%')
         .height('100%')
         .backgroundColor('#66000000')
+        .zIndex(40)
       }
     }
     .width('100%')
