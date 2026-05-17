@@ -42,15 +42,6 @@ interface OnHttpErrorReceiveEventShape {
   response: HttpErrorResponseShape
 }
 
-interface SslErrorHandlerShape {
-  cancel(): void
-}
-
-interface OnSslErrorEventReceiveEventShape {
-  request: WebResourceRequestShape
-  handler: SslErrorHandlerShape
-}
-
 @Entry
 @Component
 struct WebPage {
@@ -420,14 +411,6 @@ struct WebPage {
               const code = `${event.response.getResponseCode()}`
               const suffix = code ? `（http=${code}）` : ''
               this.showError(`页面加载失败：${failedUrl}${suffix}`)
-            })
-            .onSslErrorEventReceive((event: OnSslErrorEventReceiveEventShape) => {
-              const failedUrl = event.request.getRequestUrl()
-              this.showError(`SSL 错误：${failedUrl}`)
-              try {
-                event.handler.cancel()
-              } catch (_error) {
-              }
             })
             .onLoadIntercept((event) => {
               const url = event && event.data ? event.data.getRequestUrl() : ''
