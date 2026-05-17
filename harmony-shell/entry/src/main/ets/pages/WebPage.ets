@@ -49,6 +49,7 @@ struct WebPage {
   @State private switcherVisible: boolean = false
   @State private servers: ServerEntry[] = []
   @State private loadProgress: number = 0
+  @State private navGestureStartY: number = 0
 
   private controller: webview.WebviewController = new webview.WebviewController()
   private notificationBridge: NotificationBridge = new NotificationBridge()
@@ -294,8 +295,8 @@ struct WebPage {
               })
             }
             .width('100%')
-            .padding({ left: 12, right: 12, top: 10, bottom: 10 })
-            .backgroundColor('#111827')
+            .padding({ left: 12, right: 12, top: 8, bottom: 8 })
+            .backgroundColor('#101820')
             .zIndex(10)
 
             if (this.pageLoading) {
@@ -311,9 +312,22 @@ struct WebPage {
             Blank().layoutWeight(1)
           }
           .width('100%')
-          .height(8)
+          .height(6)
           .backgroundColor('#334155')
-          .onTouch(() => this.revealNav())
+          .onTouch((event) => {
+            const touch = event.touches && event.touches.length > 0 ? event.touches[0] : undefined
+            if (!touch) {
+              return
+            }
+            if (event.type === TouchType.Down) {
+              this.navGestureStartY = touch.y
+              return
+            }
+            if (event.type === TouchType.Move && touch.y - this.navGestureStartY > 10) {
+              this.revealNav()
+              return
+            }
+          })
         }
 
         if (!this.switcherVisible && !this.errorVisible) {
