@@ -10,9 +10,52 @@ import { createWebUiState } from '../common/webUiState'
 import { buildNotificationShim } from '../common/webBridge'
 import type { ServerEntry } from '../common/serverModel'
 
+interface WebResourceRequestShape {
+  getRequestUrl(): string
+  isMainFrame(): boolean
+}
+
+interface WebResourceErrorShape {
+  getErrorCode(): number
+  getErrorInfo(): string
+}
+
+interface OnErrorReceiveEventShape {
+  request: WebResourceRequestShape
+  error: WebResourceErrorShape
+}
+
+interface OnProgressChangeEventShape {
+  newProgress: number
+}
+
+interface OnTitleReceiveEventShape {
+  title: string
+}
+
+interface HttpErrorResponseShape {
+  getResponseCode(): number
+}
+
+interface OnHttpErrorReceiveEventShape {
+  request: WebResourceRequestShape
+  response: HttpErrorResponseShape
+}
+
+interface SslErrorHandlerShape {
+  cancel(): void
+}
+
+interface OnSslErrorEventReceiveEventShape {
+  request: WebResourceRequestShape
+  handler: SslErrorHandlerShape
+}
+
 @Entry
 @Component
 struct WebPage {
+  private readonly debugEnabled: boolean = true
+
   @State private currentUrl: string = ''
   @State private navVisible: boolean = createWebUiState().navVisible
   @State private pageLoading: boolean = createWebUiState().pageLoading
@@ -38,6 +81,9 @@ struct WebPage {
   }
 
   private setDebug(message: string): void {
+    if (!this.debugEnabled) {
+      return
+    }
     this.debugLine = message
   }
 
@@ -342,56 +388,44 @@ struct WebPage {
               this.injectNotificationShim()
               this.handleFileUploadRequest()
             })
-            .onProgressChange((event) => {
-              const next = event && typeof event.newProgress === 'number' ? event.newProgress : 0
+            .onProgressChange((event: OnProgressChangeEventShape) => {
+              const next = event.newProgress
               this.loadProgress = next
               if (next > 0 && next < 100) {
                 this.pageLoading = true
               }
               this.setDebug(`progress:${next}`)
             })
-            .onTitleReceive((event) => {
-              const title = event && typeof event.title === 'string' ? event.title : ''
+            .onTitleReceive((event: OnTitleReceiveEventShape) => {
+              const title = event.title
               if (title) {
                 this.setDebug(`title:${title}`)
               }
             })
-            .onDetectedBlankScreen((_event) => {
-              this.setDebug('blankScreen')
-              promptAction.showToast({ message: '检测到白屏' })
-            })
-            .onErrorReceive((event) => {
-              const failedUrl = event && event.request ? event.request.getRequestUrl() : this.currentUrl
-              const isMainFrame = event && event.request && typeof event.request.isMainFrame === 'function'
-                ? event.request.isMainFrame()
-                : this.isPrimaryRequest(failedUrl)
+            .onErrorReceive((event: OnErrorReceiveEventShape) => {
+              const failedUrl = event.request.getRequestUrl()
+              const isMainFrame = event.request.isMainFrame()
               if (!isMainFrame) {
                 console.warn(`Ignore subresource load failure: ${failedUrl}`)
                 return
               }
               this.showError(this.formatWebError(event))
             })
-            .onHttpErrorReceive((event) => {
-              const failedUrl = event && event.request ? event.request.getRequestUrl() : this.currentUrl
-              const isMainFrame = event && event.request && typeof event.request.isMainFrame === 'function'
-                ? event.request.isMainFrame()
-                : this.isPrimaryRequest(failedUrl)
+            .onHttpErrorReceive((event: OnHttpErrorReceiveEventShape) => {
+              const failedUrl = event.request.getRequestUrl()
+              const isMainFrame = event.request.isMainFrame()
               if (!isMainFrame) {
                 return
               }
-              const code = event && event.response && typeof event.response.getResponseCode === 'function'
-                ? `${event.response.getResponseCode()}`
-                : ''
+              const code = `${event.response.getResponseCode()}`
               const suffix = code ? `（http=${code}）` : ''
               this.showError(`页面加载失败：${failedUrl}${suffix}`)
             })
-            .onSslErrorEventReceive((event) => {
-              const failedUrl = event && event.request ? event.request.getRequestUrl() : this.currentUrl
+            .onSslErrorEventReceive((event: OnSslErrorEventReceiveEventShape) => {
+              const failedUrl = event.request.getRequestUrl()
               this.showError(`SSL 错误：${failedUrl}`)
               try {
-                if (event && event.handler && typeof event.handler.cancel === 'function') {
-                  event.handler.cancel()
-                }
+                event.handler.cancel()
               } catch (_error) {
               }
             })
