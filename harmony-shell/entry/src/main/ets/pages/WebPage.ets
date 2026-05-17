@@ -27,6 +27,13 @@ struct WebPage {
   private storage?: ShellStorage
   private hideTask?: number
 
+  private isPrimaryRequest(url: string): boolean {
+    if (!url) {
+      return false
+    }
+    return url === this.currentUrl || this.currentUrl.startsWith(url) || url.startsWith(this.currentUrl)
+  }
+
   async aboutToAppear(): Promise<void> {
     const context = getContext(this) as common.UIAbilityContext
     this.storage = new ShellStorage(context)
@@ -198,51 +205,62 @@ struct WebPage {
           .onTouch(() => this.revealNav())
         }
 
-        Web({ src: this.currentUrl, controller: this.controller })
-          .width('100%')
-          .layoutWeight(1)
-          .javaScriptAccess(true)
-          .domStorageAccess(true)
-          .fileAccess(true)
-          .imageAccess(true)
-          .onlineImageAccess(true)
-          .mixedMode(MixedMode.All)
-          .javaScriptProxy({
-            object: this.notificationProxy,
-            name: 'AionUiHarmonyBridge',
-            methodList: ['requestNotificationPermission'],
-            controller: this.controller
-          })
-          .onPageBegin((_event) => {
-            this.pageLoading = true
-            this.clearError()
-            this.revealNav()
-          })
-          .onPageEnd((_event) => {
-            this.pageLoading = false
-            this.revealNav()
-            this.injectNotificationShim()
-            this.handleFileUploadRequest()
-          })
-          .onErrorReceive((event) => {
-            const failedUrl = event && event.request ? event.request.getRequestUrl() : this.currentUrl
-            this.showError(`页面加载失败：${failedUrl}`)
-          })
-          .onLoadIntercept((event) => {
-            const url = event && event.data ? event.data.getRequestUrl() : ''
-            if (!url || isHttpLike(url)) {
-              return false
-            }
-            this.openExternalUrl(url)
-            return true
-          })
-          .onDownloadStart((_event) => {
-            const sanitizedUrl = this.currentUrl.split('?')[0]
-            const segments = sanitizedUrl.split('/')
-            const lastSegment = segments.length > 0 ? segments[segments.length - 1] : ''
-            const fileName = lastSegment ? lastSegment : 'download.bin'
-            this.downloadBridge.startDownload(this.currentUrl, fileName)
-          })
+        if (!this.switcherVisible && !this.errorVisible) {
+          Web({ src: this.currentUrl, controller: this.controller, renderMode: RenderMode.SYNC_RENDER })
+            .width('100%')
+            .layoutWeight(1)
+            .javaScriptAccess(true)
+            .domStorageAccess(true)
+            .fileAccess(true)
+            .imageAccess(true)
+            .onlineImageAccess(true)
+            .mixedMode(MixedMode.All)
+            .javaScriptProxy({
+              object: this.notificationProxy,
+              name: 'AionUiHarmonyBridge',
+              methodList: ['requestNotificationPermission'],
+              controller: this.controller
+            })
+            .onPageBegin((_event) => {
+              this.pageLoading = true
+              this.clearError()
+              this.revealNav()
+            })
+            .onPageEnd((_event) => {
+              this.pageLoading = false
+              this.revealNav()
+              this.injectNotificationShim()
+              this.handleFileUploadRequest()
+            })
+            .onErrorReceive((event) => {
+              const failedUrl = event && event.request ? event.request.getRequestUrl() : this.currentUrl
+              if (!this.isPrimaryRequest(failedUrl)) {
+                console.warn(`Ignore subresource load failure: ${failedUrl}`)
+                return
+              }
+              this.showError(`页面加载失败：${failedUrl}`)
+            })
+            .onLoadIntercept((event) => {
+              const url = event && event.data ? event.data.getRequestUrl() : ''
+              if (!url || isHttpLike(url)) {
+                return false
+              }
+              this.openExternalUrl(url)
+              return true
+            })
+            .onDownloadStart((_event) => {
+              const sanitizedUrl = this.currentUrl.split('?')[0]
+              const segments = sanitizedUrl.split('/')
+              const lastSegment = segments.length > 0 ? segments[segments.length - 1] : ''
+              const fileName = lastSegment ? lastSegment : 'download.bin'
+              this.downloadBridge.startDownload(this.currentUrl, fileName)
+            })
+        } else {
+          Column()
+            .width('100%')
+            .layoutWeight(1)
+            .backgroundColor('#020617')
+        }
       }
       .width('100%')
       .height('100%')
