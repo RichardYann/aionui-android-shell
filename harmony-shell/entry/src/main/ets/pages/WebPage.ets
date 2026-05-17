@@ -20,6 +20,8 @@ struct WebPage {
   @State private errorMessage: string = createWebUiState().errorMessage
   @State private switcherVisible: boolean = false
   @State private servers: ServerEntry[] = []
+  @State private loadProgress: number = 0
+  @State private debugLine: string = ''
 
   private controller: webview.WebviewController = new webview.WebviewController()
   private notificationBridge: NotificationBridge = new NotificationBridge()
@@ -35,6 +37,10 @@ struct WebPage {
     return url === this.currentUrl || this.currentUrl.startsWith(url) || url.startsWith(this.currentUrl)
   }
 
+  private setDebug(message: string): void {
+    this.debugLine = message
+  }
+
   async aboutToAppear(): Promise<void> {
     const context = getContext(this) as common.UIAbilityContext
     this.storage = new ShellStorage(context)
@@ -42,6 +48,8 @@ struct WebPage {
     const params = router.getParams() as Record<string, string>
     const initialUrl = (params && params.initialUrl) ? params.initialUrl : await this.storage.getLastUrl()
     this.currentUrl = initialUrl
+    this.loadProgress = 0
+    this.setDebug(`init:${this.currentUrl}`)
     if (!this.currentUrl) {
       router.replaceUrl({ url: 'pages/ConnectPage' })
       return
@@ -70,6 +78,7 @@ struct WebPage {
     this.errorMessage = message
     this.pageLoading = false
     this.navVisible = true
+    this.setDebug(`error:${message}`)
   }
 
   private clearError(): void {
@@ -282,7 +291,7 @@ struct WebPage {
             .zIndex(10)
 
             if (this.pageLoading) {
-              Progress({ value: 50, total: 100, type: ProgressType.Linear })
+              Progress({ value: this.loadProgress, total: 100, type: ProgressType.Linear })
                 .width('100%')
                 .height(2)
                 .color('#60A5FA')
@@ -300,7 +309,7 @@ struct WebPage {
         }
 
         if (!this.switcherVisible && !this.errorVisible) {
-          Web({ src: this.currentUrl, controller: this.controller, renderMode: RenderMode.SYNC_RENDER })
+          Web({ src: this.currentUrl, controller: this.controller })
             .width('100%')
             .layoutWeight(1)
             .javaScriptAccess(true)
@@ -315,24 +324,76 @@ struct WebPage {
               methodList: ['requestNotificationPermission'],
               controller: this.controller
             })
+            .onControllerAttached(() => {
+              this.setDebug('controllerAttached')
+            })
             .onPageBegin((_event) => {
               this.pageLoading = true
+              this.loadProgress = 0
               this.clearError()
+              this.setDebug('pageBegin')
               this.revealNav()
             })
             .onPageEnd((_event) => {
               this.pageLoading = false
+              this.loadProgress = 100
+              this.setDebug('pageEnd')
               this.revealNav()
               this.injectNotificationShim()
               this.handleFileUploadRequest()
             })
+            .onProgressChange((event) => {
+              const next = event && typeof event.newProgress === 'number' ? event.newProgress : 0
+              this.loadProgress = next
+              if (next > 0 && next < 100) {
+                this.pageLoading = true
+              }
+              this.setDebug(`progress:${next}`)
+            })
+            .onTitleReceive((event) => {
+              const title = event && typeof event.title === 'string' ? event.title : ''
+              if (title) {
+                this.setDebug(`title:${title}`)
+              }
+            })
+            .onDetectedBlankScreen((_event) => {
+              this.setDebug('blankScreen')
+              promptAction.showToast({ message: '检测到白屏' })
+            })
             .onErrorReceive((event) => {
               const failedUrl = event && event.request ? event.request.getRequestUrl() : this.currentUrl
-              if (!this.isPrimaryRequest(failedUrl)) {
+              const isMainFrame = event && event.request && typeof event.request.isMainFrame === 'function'
+                ? event.request.isMainFrame()
+                : this.isPrimaryRequest(failedUrl)
+              if (!isMainFrame) {
                 console.warn(`Ignore subresource load failure: ${failedUrl}`)
                 return
               }
               this.showError(this.formatWebError(event))
+            })
+            .onHttpErrorReceive((event) => {
+              const failedUrl = event && event.request ? event.request.getRequestUrl() : this.currentUrl
+              const isMainFrame = event && event.request && typeof event.request.isMainFrame === 'function'
+                ? event.request.isMainFrame()
+                : this.isPrimaryRequest(failedUrl)
+              if (!isMainFrame) {
+                return
+              }
+              const code = event && event.response && typeof event.response.getResponseCode === 'function'
+                ? `${event.response.getResponseCode()}`
+                : ''
+              const suffix = code ? `（http=${code}）` : ''
+              this.showError(`页面加载失败：${failedUrl}${suffix}`)
+            })
+            .onSslErrorEventReceive((event) => {
+              const failedUrl = event && event.request ? event.request.getRequestUrl() : this.currentUrl
+              this.showError(`SSL 错误：${failedUrl}`)
+              try {
+                if (event && event.handler && typeof event.handler.cancel === 'function') {
+                  event.handler.cancel()
+                }
+              } catch (_error) {
+              }
             })
             .onLoadIntercept((event) => {
               const url = event && event.data ? event.data.getRequestUrl() : ''
@@ -359,6 +420,16 @@ struct WebPage {
       .width('100%')
       .height('100%')
       .backgroundColor('#020617')
+
+      if (this.debugLine) {
+        Text(this.debugLine)
+          .fontSize(11)
+          .fontColor('#94A3B8')
+          .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+          .backgroundColor('#66000000')
+          .margin({ top: 8, left: 8, right: 8 })
+          .zIndex(60)
+      }
 
       if (this.pageLoading) {
         Column({ space: 12 }) {
