@@ -1,7 +1,6 @@
 import { promptAction, router } from '@kit.ArkUI'
 import { common, Want } from '@kit.AbilityKit'
 import { webview } from '@kit.ArkWeb'
-import http from '@ohos.net.http'
 import { DownloadBridge } from '../common/downloadBridge'
 import { NotificationBridge, NotificationProxy } from '../common/notificationBridge'
 import { ShellStorage } from '../common/storage'
@@ -29,10 +28,6 @@ interface OnProgressChangeEventShape {
   newProgress: number
 }
 
-interface OnTitleReceiveEventShape {
-  title: string
-}
-
 interface HttpErrorResponseShape {
   getResponseCode(): number
 }
@@ -45,17 +40,15 @@ interface OnHttpErrorReceiveEventShape {
 @Entry
 @Component
 struct WebPage {
-  private readonly debugEnabled: boolean = true
-
   @State private currentUrl: string = ''
   @State private navVisible: boolean = createWebUiState().navVisible
-  @State private pageLoading: boolean = createWebUiState().pageLoading
+  @State private bootLoading: boolean = true
+  @State private pageLoading: boolean = false
   @State private errorVisible: boolean = createWebUiState().errorVisible
   @State private errorMessage: string = createWebUiState().errorMessage
   @State private switcherVisible: boolean = false
   @State private servers: ServerEntry[] = []
   @State private loadProgress: number = 0
-  @State private debugLine: string = ''
 
   private controller: webview.WebviewController = new webview.WebviewController()
   private notificationBridge: NotificationBridge = new NotificationBridge()
@@ -71,13 +64,6 @@ struct WebPage {
     return url === this.currentUrl || this.currentUrl.startsWith(url) || url.startsWith(this.currentUrl)
   }
 
-  private setDebug(message: string): void {
-    if (!this.debugEnabled) {
-      return
-    }
-    this.debugLine = message
-  }
-
   async aboutToAppear(): Promise<void> {
     const context = getContext(this) as common.UIAbilityContext
     this.storage = new ShellStorage(context)
@@ -85,8 +71,9 @@ struct WebPage {
     const params = router.getParams() as Record<string, string>
     const initialUrl = (params && params.initialUrl) ? params.initialUrl : await this.storage.getLastUrl()
     this.currentUrl = initialUrl
+    this.bootLoading = true
+    this.pageLoading = false
     this.loadProgress = 0
-    this.setDebug(`init:${this.currentUrl}`)
     if (!this.currentUrl) {
       router.replaceUrl({ url: 'pages/ConnectPage' })
       return
@@ -99,7 +86,7 @@ struct WebPage {
       clearTimeout(this.hideTask)
     }
     this.hideTask = setTimeout(() => {
-      if (!this.pageLoading && !this.errorVisible && !this.switcherVisible) {
+      if (!this.bootLoading && !this.pageLoading && !this.errorVisible && !this.switcherVisible) {
         this.navVisible = false
       }
     }, 2500)
@@ -113,9 +100,9 @@ struct WebPage {
   private showError(message: string): void {
     this.errorVisible = true
     this.errorMessage = message
+    this.bootLoading = false
     this.pageLoading = false
     this.navVisible = true
-    this.setDebug(`error:${message}`)
   }
 
   private clearError(): void {
@@ -125,6 +112,7 @@ struct WebPage {
 
   private navigateToConnectPage(): void {
     this.switcherVisible = false
+    this.bootLoading = false
     this.pageLoading = false
     this.navVisible = true
     this.clearError()
@@ -138,23 +126,6 @@ struct WebPage {
       console.warn('Failed to stop current page load before leaving.')
     }
     this.navigateToConnectPage()
-  }
-
-  private async probeInternet(): Promise<void> {
-    try {
-      const client = http.createHttp()
-      const response = await client.request('https://www.baidu.com/', {
-        method: http.RequestMethod.GET,
-        connectTimeout: 8000,
-        readTimeout: 8000
-      })
-      const code = response && typeof response.responseCode === 'number' ? response.responseCode : -1
-      await client.destroy()
-      promptAction.showToast({ message: `网络自检：${code}` })
-    } catch (error) {
-      const message = error ? `${error}` : 'unknown'
-      promptAction.showToast({ message: `网络自检失败：${message}` })
-    }
   }
 
   private formatWebError(event: object | undefined): string {
@@ -207,7 +178,9 @@ struct WebPage {
     this.currentUrl = server.url
     this.switcherVisible = false
     this.clearError()
+    this.bootLoading = false
     this.pageLoading = true
+    this.loadProgress = 0
     this.revealNav()
   }
 
@@ -309,12 +282,10 @@ struct WebPage {
               Button($r('app.string.web_back')).onClick(() => this.handleBackAction())
               Button($r('app.string.web_refresh')).onClick(() => {
                 this.clearError()
+                this.bootLoading = false
                 this.pageLoading = true
                 this.controller.refresh()
                 this.revealNav()
-              })
-              Button('网络自检').onClick(() => {
-                this.probeInternet()
               })
               Button($r('app.string.web_switch_server')).onClick(async () => {
                 await this.refreshServers()
@@ -361,20 +332,17 @@ struct WebPage {
               methodList: ['requestNotificationPermission'],
               controller: this.controller
             })
-            .onControllerAttached(() => {
-              this.setDebug('controllerAttached')
-            })
             .onPageBegin((_event) => {
+              this.bootLoading = false
               this.pageLoading = true
               this.loadProgress = 0
               this.clearError()
-              this.setDebug('pageBegin')
               this.revealNav()
             })
             .onPageEnd((_event) => {
+              this.bootLoading = false
               this.pageLoading = false
               this.loadProgress = 100
-              this.setDebug('pageEnd')
               this.revealNav()
               this.injectNotificationShim()
               this.handleFileUploadRequest()
@@ -382,15 +350,9 @@ struct WebPage {
             .onProgressChange((event: OnProgressChangeEventShape) => {
               const next = event.newProgress
               this.loadProgress = next
-              if (next > 0 && next < 100) {
-                this.pageLoading = true
-              }
-              this.setDebug(`progress:${next}`)
-            })
-            .onTitleReceive((event: OnTitleReceiveEventShape) => {
-              const title = event.title
-              if (title) {
-                this.setDebug(`title:${title}`)
+              if (next > 0) {
+                this.bootLoading = false
+                this.pageLoading = next < 100
               }
             })
             .onErrorReceive((event: OnErrorReceiveEventShape) => {
@@ -438,17 +400,7 @@ struct WebPage {
       .height('100%')
       .backgroundColor('#020617')
 
-      if (this.debugLine) {
-        Text(this.debugLine)
-          .fontSize(11)
-          .fontColor('#94A3B8')
-          .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-          .backgroundColor('#66000000')
-          .margin({ top: 8, left: 8, right: 8 })
-          .zIndex(60)
-      }
-
-      if (this.pageLoading) {
+      if (this.bootLoading) {
         Column({ space: 12 }) {
           LoadingProgress().width(32).height(32)
           Text($r('app.string.web_loading')).fontColor(Color.White)
